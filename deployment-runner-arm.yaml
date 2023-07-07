@@ -1,0 +1,364 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Mappings:
+  RegionMap:
+    ap-northeast-1:
+      AMI: ami-0a8be33c358a98829
+    ap-northeast-2:
+      AMI: ami-04ea56ea021b86658
+    ap-northeast-3:
+      AMI: ami-098436f864fd2d3b0
+    ap-south-1:
+      AMI: ami-0fbb5026d37f5f347
+    ap-southeast-1:
+      AMI: ami-0108ebda02138676e
+    ap-southeast-2:
+      AMI: ami-09a2afe68765e6248
+    ca-central-1:
+      AMI: ami-04ecbc5a516929022
+    eu-central-1:
+      AMI: ami-01ad80fd556799f44
+    eu-north-1:
+      AMI: ami-003e63396fb3cf41f
+    eu-west-1:
+      AMI: ami-0cbbbe6104042e885
+    eu-west-2:
+      AMI: ami-035d9fe64fff63b27
+    eu-west-3:
+      AMI: ami-050cc42ff95d4ed9d
+    sa-east-1:
+      AMI: ami-0f68db8769ddddc2e
+    us-east-1:
+      AMI: ami-03a8890aa01a8eaff
+    us-east-2:
+      AMI: ami-0280e3450a5a28e52
+    us-west-1:
+      AMI: ami-0057dd7b23e1c372e
+    us-west-2:
+      AMI: ami-036aba10f939dbcbb
+Parameters:
+  DeploymentRunnerSubnetId:
+    ConstraintDescription: Should be present
+    Description: Please select Subnet where the runner will be deployed.
+    Type: AWS::EC2::Subnet::Id
+  Key:
+    AllowedPattern: ^[a-zA-Z0-9]+$
+    ConstraintDescription: API key must only contain uppercase and lowercase letters and numbers
+    Type: String
+  OrganizationID:
+    AllowedPattern: ^[a-zA-Z0-9]+$
+    ConstraintDescription: Organization ID must only contain uppercase and lowercase letters and numbers
+    Type: String
+Resources:
+  DeploymentEcsInstanceProfilearm:
+    DependsOn:
+      - DeploymentEcsInstanceRolearm
+    Properties:
+      InstanceProfileName:
+        Fn::Join:
+          - '-'
+          - - ecsInstanceProfilearm
+            - Ref: OrganizationID
+      Roles:
+        - Ref: DeploymentEcsInstanceRolearm
+    Type: AWS::IAM::InstanceProfile
+  DeploymentEcsInstanceRolearm:
+    Properties:
+      AssumeRolePolicyDocument: |-
+        {
+          "Version": "2008-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ec2.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        }
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+      RoleName:
+        Fn::Join:
+          - '-'
+          - - ecsInstanceRolearm
+            - Ref: OrganizationID
+      Tags:
+        - Key: created by
+          Value: deployment.io
+    Type: AWS::IAM::Role
+  DeploymentRunnerASGarm:
+    DependsOn:
+      - DeploymentRunnerLaunchTemplatearm
+    Properties:
+      AutoScalingGroupName: deployment-runner-asg-arm
+      DefaultInstanceWarmup: 5
+      DesiredCapacity: "1"
+      LaunchTemplate:
+        LaunchTemplateId:
+          Ref: DeploymentRunnerLaunchTemplatearm
+        Version:
+          Fn::GetAtt:
+            - DeploymentRunnerLaunchTemplatearm
+            - LatestVersionNumber
+      MaxSize: "2"
+      MinSize: "1"
+      VPCZoneIdentifier:
+        - Ref: DeploymentRunnerSubnetId
+    Type: AWS::AutoScaling::AutoScalingGroup
+  DeploymentRunnerCCarm:
+    DependsOn:
+      - DeploymentRunnerASGarm
+    Properties:
+      AutoScalingGroupProvider:
+        AutoScalingGroupArn:
+          Ref: DeploymentRunnerASGarm
+      Name: deployment-runner-capacity-provider-arm
+      Tags:
+        - Key: created by
+          Value: deployment.io
+        - Key: capacity provider
+          Value: deployment-runner-capacity-provider-arm
+    Type: AWS::ECS::CapacityProvider
+  DeploymentRunnerClusterarm:
+    DependsOn:
+      - DeploymentRunnerCCarm
+    Properties:
+      CapacityProviders:
+        - FARGATE
+        - deployment-runner-capacity-provider-arm
+      ClusterName:
+        Fn::Join:
+          - '-'
+          - - ecs-arm
+            - Ref: OrganizationID
+      Tags:
+        - Key: created by
+          Value: deployment.io
+    Type: AWS::ECS::Cluster
+  DeploymentRunnerLaunchTemplatearm:
+    Properties:
+      LaunchTemplateData:
+        IamInstanceProfile:
+          Arn:
+            Fn::GetAtt:
+              - DeploymentEcsInstanceProfilearm
+              - Arn
+        ImageId:
+          Fn::FindInMap:
+            - RegionMap
+            - Ref: AWS::Region
+            - AMI
+        InstanceType: m6g.large
+        NetworkInterfaces:
+          - DeviceIndex: 0
+            SubnetId:
+              Ref: DeploymentRunnerSubnetId
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: created by
+                Value: deployment.io
+              - Key: instance launch template
+                Value: deployment-runner-template-arm
+        UserData:
+          Fn::Base64:
+            Fn::Join:
+              - "\n"
+              - - '#!/bin/bash'
+                - Fn::Join:
+                    - ""
+                    - - 'echo "ECS_CLUSTER='
+                      - Fn::Join:
+                          - '-'
+                          - - 'ecs-arm'
+                            - Ref: OrganizationID
+                      - '" >> /etc/ecs/ecs.config'
+      LaunchTemplateName: deployment-runner-template-arm
+      TagSpecifications:
+        - ResourceType: launch-template
+          Tags:
+            - Key: created by
+              Value: deployment.io
+            - Key: launch template
+              Value: deployment-runner-template-arm
+      VersionDescription: launch template for deployment runner ec2 instance
+    Type: AWS::EC2::LaunchTemplate
+  DeploymentRunnerServicearm:
+    DependsOn:
+      - DeploymentRunnerClusterarm
+      - DeploymentRunnerTaskDefinitionarm
+    Properties:
+      CapacityProviderStrategy:
+        - CapacityProvider: deployment-runner-capacity-provider-arm
+          Weight: 1
+      Cluster:
+        Fn::Join:
+          - '-'
+          - - ecs-arm
+            - Ref: OrganizationID
+      DesiredCount: 1
+      EnableECSManagedTags: false
+      EnableExecuteCommand: false
+      SchedulingStrategy: REPLICA
+      ServiceName: deployment-runner-arm
+      Tags:
+        - Key: Name
+          Value: deployment-runner-arm
+        - Key: created by
+          Value: deployment.io
+      TaskDefinition:
+        Ref: DeploymentRunnerTaskDefinitionarm
+    Type: AWS::ECS::Service
+  DeploymentRunnerTaskDefinitionarm:
+    DependsOn:
+      - DeploymentRunnerTaskExecutionRolearm
+      - DeploymentRunnerTaskRolearm
+    Properties:
+      ContainerDefinitions:
+        - DisableNetworking: false
+          Environment:
+            - Name: Token
+              Value:
+                Ref: Key
+            - Name: OrganizationID
+              Value:
+                Ref: OrganizationID
+            - Name: Service
+              Value: go.deployment.io:443
+          Essential: true
+          Image: docker.io/arorankit/deployment-runner-arm64:5
+          Interactive: false
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-create-group: "true"
+              awslogs-group: deployment-runner-logs-group-arm
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-stream-prefix: "5"
+          MountPoints:
+            - ContainerPath: /var/run/docker.sock
+              SourceVolume: docker-socket
+            - ContainerPath: /tmp
+              SourceVolume: temp
+          Name: deployment-runner-arm
+          Privileged: false
+          PseudoTerminal: false
+          ReadonlyRootFilesystem: false
+      ExecutionRoleArn:
+        Ref: DeploymentRunnerTaskExecutionRolearm
+      Family: deployment-runner-arm
+      Memory: 6 GB
+      NetworkMode: host
+      RuntimePlatform:
+        CpuArchitecture: ARM64
+        OperatingSystemFamily: LINUX
+      Tags:
+        - Key: Name
+          Value: deployment-runner-arm
+        - Key: created by
+          Value: deployment.io
+      TaskRoleArn:
+        Ref: DeploymentRunnerTaskRolearm
+      Volumes:
+        - Host:
+            SourcePath: /var/run/docker.sock
+          Name: docker-socket
+        - Host:
+            SourcePath: /tmp
+          Name: temp
+    Type: AWS::ECS::TaskDefinition
+  DeploymentRunnerTaskExecutionRolearm:
+    Properties:
+      AssumeRolePolicyDocument: |-
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        }
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+        - arn:aws:iam::aws:policy/CloudWatchFullAccess
+      RoleName:
+        Fn::Join:
+          - '-'
+          - - ecsTaskExecutionRole-arm
+            - Ref: OrganizationID
+      Tags:
+        - Key: created by
+          Value: deployment.io
+    Type: AWS::IAM::Role
+  DeploymentRunnerTaskRolearm:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Condition:
+              ArnLike:
+                aws:SourceArn:
+                  Fn::Join:
+                    - ""
+                    - - 'arn:aws:ecs:'
+                      - Ref: AWS::Region
+                      - ':'
+                      - Ref: AWS::AccountId
+                      - :*
+              StringEquals:
+                aws:SourceAccount:
+                  Ref: AWS::AccountId
+            Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+        Version: "2012-10-17"
+      Description: This IAM Role is assigned to deployment runner task installed on your AWS account. At no point access is given to any other account or task.
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudFrontFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonRoute53FullAccess
+        - arn:aws:iam::aws:policy/AWSCertificateManagerFullAccess
+        - arn:aws:iam::aws:policy/CloudWatchFullAccess
+        - arn:aws:iam::aws:policy/AmazonECS_FullAccess
+        - arn:aws:iam::aws:policy/AmazonEC2FullAccess
+        - arn:aws:iam::aws:policy/IAMFullAccess
+        - arn:aws:iam::aws:policy/job-function/Billing
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - arn:aws:iam::aws:policy/AWSKeyManagementServicePowerUser
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - ecr:*
+                Effect: Allow
+                Resource:
+                  - '*'
+              - Action:
+                  - iam:CreateServiceLinkedRole
+                Condition:
+                  StringLike:
+                    iam:AWSServiceName: ecs.amazonaws.com
+                Effect: Allow
+                Resource:
+                  - Fn::Join:
+                      - ""
+                      - - 'arn:aws:iam::'
+                        - Ref: AWS::AccountId
+                        - :role/ecs.amazonaws.com/*
+            Version: "2012-10-17"
+          PolicyName: deployment-runner-policy
+      RoleName: deployment-runner-task-role-arm
+      Tags:
+        - Key: Name
+          Value: deployment-runner-task-role-arm
+        - Key: created by
+          Value: deployment.io
+    Type: AWS::IAM::Role
