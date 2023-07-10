@@ -1,6 +1,10 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Mappings:
   RegionMap:
+    af-south-1:
+      AMI: ami-0ce81870a6f4af3e2
+    ap-east-1:
+      AMI: ami-08103cb54209bdae7
     ap-northeast-1:
       AMI: ami-07ab97183b907936a
     ap-northeast-2:
@@ -9,22 +13,38 @@ Mappings:
       AMI: ami-0c8b475b4e420ba58
     ap-south-1:
       AMI: ami-02ef23ca2cb951485
+    ap-south-2:
+      AMI: ami-0c009871e78855285
     ap-southeast-1:
       AMI: ami-0dbda5a9cd13131cc
     ap-southeast-2:
       AMI: ami-06fe9fab8c559477a
+    ap-southeast-3:
+      AMI: ami-0a987236460ea46f2
+    ap-southeast-4:
+      AMI: ami-05b0446b3ef221316
     ca-central-1:
       AMI: ami-00d7850e1cced31e8
     eu-central-1:
       AMI: ami-0680cd3cbe51b2da9
+    eu-central-2:
+      AMI: ami-01cdcd8d52cbc51ca
     eu-north-1:
       AMI: ami-0b2f0b9608d0bd542
+    eu-south-1:
+      AMI: ami-0024f71afb0a67fb4
+    eu-south-2:
+      AMI: ami-0840f3f47ee7b3af1
     eu-west-1:
       AMI: ami-0ed094d133e1ee155
     eu-west-2:
       AMI: ami-04c2c83194acea290
     eu-west-3:
       AMI: ami-068fc1386e1e75bd5
+    me-central-1:
+      AMI: ami-08945b753a8c3698b
+    me-south-1:
+      AMI: ami-0016c2952ac585287
     sa-east-1:
       AMI: ami-031765be078ae2bb8
     us-east-1:
@@ -43,10 +63,12 @@ Parameters:
   Key:
     AllowedPattern: ^[a-zA-Z0-9]+$
     ConstraintDescription: API key must only contain uppercase and lowercase letters and numbers
+    Description: This is your unique prefilled token key identifier used for communication with deployment.io. Please don't change.
     Type: String
   OrganizationID:
     AllowedPattern: ^[a-zA-Z0-9]+$
     ConstraintDescription: Organization ID must only contain uppercase and lowercase letters and numbers
+    Description: This is your unique prefilled organization id. Please don't change.
     Type: String
 Resources:
   DeploymentEcsInstanceProfileamd:
