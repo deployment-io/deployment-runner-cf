@@ -63,7 +63,7 @@ Parameters:
   Key:
     AllowedPattern: ^[a-zA-Z0-9]+$
     ConstraintDescription: API key must only contain uppercase and lowercase letters and numbers
-    Description: This is your unique prefilled token key identifier used for communication with deployment.io. Please don't change.
+    Description: This is your unique prefilled token key identifier that is used for communication with deployment.io. Please don't change.
     Type: String
   OrganizationID:
     AllowedPattern: ^[a-zA-Z0-9]+$
