@@ -1,4 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
+Description: This will install the deployment runner on the selected subnet. The organization id and key are unique to your account and used for authorization and communication with deployment servers.
 Mappings:
   RegionMap:
     af-south-1:
