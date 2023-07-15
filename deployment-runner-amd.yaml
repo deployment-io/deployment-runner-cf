@@ -250,7 +250,7 @@ Resources:
             - Name: Service
               Value: go.deployment.io:443
           Essential: true
-          Image: docker.io/arorankit/deployment-runner-amd64:6
+          Image: docker.io/arorankit/deployment-runner-amd64:7
           Interactive: false
           LogConfiguration:
             LogDriver: awslogs
@@ -259,7 +259,7 @@ Resources:
               awslogs-group: deployment-runner-logs-group-amd
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: "6"
+              awslogs-stream-prefix: "7"
           MountPoints:
             - ContainerPath: /var/run/docker.sock
               SourceVolume: docker-socket
