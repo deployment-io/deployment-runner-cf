@@ -64,12 +64,12 @@ Parameters:
   Key:
     AllowedPattern: ^[a-zA-Z0-9]+$
     ConstraintDescription: API key must only contain uppercase and lowercase letters and numbers
-    Description: This is your unique prefilled token key identifier that is used for communication with deployment.io. Please don't change.
+    Description: '[Do not update]. This is your unique prefilled token key identifier that is used for communication with deployment.io.'
     Type: String
   OrganizationID:
     AllowedPattern: ^[a-zA-Z0-9]+$
     ConstraintDescription: Organization ID must only contain uppercase and lowercase letters and numbers
-    Description: This is your unique prefilled organization id. Please don't change.
+    Description: '[Do not update]. This is your unique prefilled organization id.'
     Type: String
 Resources:
   DeploymentEcsInstanceProfileamd:
@@ -250,7 +250,7 @@ Resources:
             - Name: Service
               Value: go.deployment.io:443
           Essential: true
-          Image: docker.io/arorankit/deployment-runner-amd64:9
+          Image: docker.io/arorankit/deployment-runner-amd64:10
           Interactive: false
           LogConfiguration:
             LogDriver: awslogs
@@ -259,7 +259,7 @@ Resources:
               awslogs-group: deployment-runner-logs-group-amd
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: "9"
+              awslogs-stream-prefix: "10"
           MountPoints:
             - ContainerPath: /var/run/docker.sock
               SourceVolume: docker-socket
