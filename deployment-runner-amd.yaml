@@ -3,59 +3,59 @@ Description: This will install the deployment runner on the selected subnet. The
 Mappings:
   RegionMap:
     af-south-1:
-      AMI: ami-019d589b15f005c72
+      AMI: ami-04ed1d585f15de355
     ap-east-1:
-      AMI: ami-0fc37822f4b6fc287
+      AMI: ami-0619b7bc78258664f
     ap-northeast-1:
-      AMI: ami-0ea8be7cdf2c2f02f
+      AMI: ami-0a62ac074b57314ae
     ap-northeast-2:
-      AMI: ami-0a7f0c1f7615be35f
+      AMI: ami-094239497a3865ad3
     ap-northeast-3:
-      AMI: ami-0b5e4ee3a12540647
+      AMI: ami-0bb89e9696b4e5656
     ap-south-1:
-      AMI: ami-00c4493503c13796f
+      AMI: ami-0c6a93d5072903a1f
     ap-south-2:
-      AMI: ami-0f5714609df13b62d
+      AMI: ami-0250cc14c3753bbf6
     ap-southeast-1:
-      AMI: ami-017de0d19a90b728d
+      AMI: ami-0037244947840df1c
     ap-southeast-2:
-      AMI: ami-06004c3fd2e44693a
+      AMI: ami-0813498214e952bf6
     ap-southeast-3:
-      AMI: ami-04891c87472cc0e73
+      AMI: ami-085f09ce04ca352b0
     ap-southeast-4:
-      AMI: ami-031e6a0feb39ec5d3
+      AMI: ami-059f5af0510db5429
     ca-central-1:
-      AMI: ami-0def9375dcd13ad21
+      AMI: ami-0368db631595d8660
     eu-central-1:
-      AMI: ami-057f5095cc5fc5023
+      AMI: ami-083981ad0228be819
     eu-central-2:
-      AMI: ami-0ea593bd0f8347e98
+      AMI: ami-0647bd19521f5b70c
     eu-north-1:
-      AMI: ami-079dc18bfb775c44d
+      AMI: ami-0f9c0085ed44a26d2
     eu-south-1:
-      AMI: ami-0eb24ba6299e8d5d3
+      AMI: ami-0ae10e4d39e238be9
     eu-south-2:
-      AMI: ami-0424cbfa97c1bde82
+      AMI: ami-01ab7dcce04d52dd7
     eu-west-1:
-      AMI: ami-0db38942e33ad878c
+      AMI: ami-0f85897a587ab793e
     eu-west-2:
-      AMI: ami-0599460fb6fbfdce0
+      AMI: ami-038f3fd3400e68912
     eu-west-3:
-      AMI: ami-02d89b4d22707c366
+      AMI: ami-06fc3815715883852
     me-central-1:
-      AMI: ami-07a5843af71912caf
+      AMI: ami-0c5ead3584cf196ca
     me-south-1:
-      AMI: ami-0ccca3ac6ebcbc6ef
+      AMI: ami-03e5c408594270c73
     sa-east-1:
-      AMI: ami-0b7ae8a99e39e1843
+      AMI: ami-09fe601da23206594
     us-east-1:
-      AMI: ami-070617e1f4c04722d
+      AMI: ami-02262fb011e2bc0aa
     us-east-2:
-      AMI: ami-0e722f942ce6386cb
+      AMI: ami-0ab996404926d90d7
     us-west-1:
-      AMI: ami-05fe18ffc00e262aa
+      AMI: ami-0457463ed9200cf7b
     us-west-2:
-      AMI: ami-043f38d39bfa3fdc8
+      AMI: ami-0ff3e116ef8ffea94
 Parameters:
   DeploymentRunnerSubnetId:
     ConstraintDescription: Should be present
@@ -220,9 +220,13 @@ Resources:
           - '-'
           - - ecs-amd
             - Ref: OrganizationID
+      DeploymentConfiguration:
+        MaximumPercent: 100
+        MinimumHealthyPercent: 0
       DesiredCount: 1
       EnableECSManagedTags: false
       EnableExecuteCommand: false
+      PropagateTags: TASK_DEFINITION
       SchedulingStrategy: REPLICA
       ServiceName: deployment-runner-amd
       Tags:
