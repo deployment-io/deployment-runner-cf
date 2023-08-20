@@ -153,7 +153,7 @@ Resources:
       ClusterName:
         Fn::Join:
           - '-'
-          - - ecs-amd
+          - - deployment-runner-amd
             - Ref: OrganizationID
       Tags:
         - Key: created by
@@ -194,7 +194,7 @@ Resources:
                     - - 'echo "ECS_CLUSTER='
                       - Fn::Join:
                           - '-'
-                          - - 'ecs-amd'
+                          - - 'deployment-runner-amd'
                             - Ref: OrganizationID
                       - '" >> /etc/ecs/ecs.config'
       LaunchTemplateName: deployment-runner-template-amd
@@ -218,7 +218,7 @@ Resources:
       Cluster:
         Fn::Join:
           - '-'
-          - - ecs-amd
+          - - deployment-runner-amd
             - Ref: OrganizationID
       DeploymentConfiguration:
         MaximumPercent: 100
@@ -254,7 +254,7 @@ Resources:
             - Name: Service
               Value: go.deployment.io:443
             - Name: DockerImage
-              Value: docker.io/arorankit/deployment-runner-amd64:13
+              Value: docker.io/arorankit/deployment-runner-amd64:14
             - Name: Region
               Value:
                 Ref: AWS::Region
@@ -269,7 +269,7 @@ Resources:
               Value:
                 Ref: DeploymentRunnerTaskRoleamd
           Essential: true
-          Image: docker.io/arorankit/deployment-runner-amd64:13
+          Image: docker.io/arorankit/deployment-runner-amd64:14
           Interactive: false
           LogConfiguration:
             LogDriver: awslogs
@@ -278,7 +278,7 @@ Resources:
               awslogs-group: deployment-runner-logs-group-amd
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: "13"
+              awslogs-stream-prefix: "14"
           MountPoints:
             - ContainerPath: /var/run/docker.sock
               SourceVolume: docker-socket
