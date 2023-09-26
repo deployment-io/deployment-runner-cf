@@ -3,59 +3,59 @@ Description: This will install the deployment runner on the selected subnet. The
 Mappings:
   RegionMap:
     af-south-1:
-      AMI: ami-04ed1d585f15de355
+      AMI: ami-0c39a41a810aa29f2
     ap-east-1:
-      AMI: ami-0619b7bc78258664f
+      AMI: ami-031c72f4dd680ab91
     ap-northeast-1:
-      AMI: ami-0a62ac074b57314ae
+      AMI: ami-0c76d299e72176192
     ap-northeast-2:
-      AMI: ami-094239497a3865ad3
+      AMI: ami-05f383abd0269f22d
     ap-northeast-3:
-      AMI: ami-0bb89e9696b4e5656
+      AMI: ami-03a24c9bb21f78dba
     ap-south-1:
-      AMI: ami-0c6a93d5072903a1f
+      AMI: ami-026d60dca99a5ac54
     ap-south-2:
-      AMI: ami-0250cc14c3753bbf6
+      AMI: ami-0f99fec80f37614f3
     ap-southeast-1:
-      AMI: ami-0037244947840df1c
+      AMI: ami-0b9d27eb102c9f32f
     ap-southeast-2:
-      AMI: ami-0813498214e952bf6
+      AMI: ami-052f5845e525f2a29
     ap-southeast-3:
-      AMI: ami-085f09ce04ca352b0
+      AMI: ami-0def9cc1477f583eb
     ap-southeast-4:
-      AMI: ami-059f5af0510db5429
+      AMI: ami-0e2fd75f1df559d08
     ca-central-1:
-      AMI: ami-0368db631595d8660
+      AMI: ami-0f72aaf1e4d7f3605
     eu-central-1:
-      AMI: ami-083981ad0228be819
+      AMI: ami-08b4378b35f70d03c
     eu-central-2:
-      AMI: ami-0647bd19521f5b70c
+      AMI: ami-00fba9baab298d095
     eu-north-1:
-      AMI: ami-0f9c0085ed44a26d2
+      AMI: ami-06c18a256c715d3c5
     eu-south-1:
-      AMI: ami-0ae10e4d39e238be9
+      AMI: ami-0309910379b63cd38
     eu-south-2:
-      AMI: ami-01ab7dcce04d52dd7
+      AMI: ami-0cbc6d29733c6aa48
     eu-west-1:
-      AMI: ami-0f85897a587ab793e
+      AMI: ami-0bca9446f7c0ba062
     eu-west-2:
-      AMI: ami-038f3fd3400e68912
+      AMI: ami-0a0e725d435985ad9
     eu-west-3:
-      AMI: ami-06fc3815715883852
+      AMI: ami-02fee4a0d2dd7372e
     me-central-1:
-      AMI: ami-0c5ead3584cf196ca
+      AMI: ami-0b5843a6943d1e9a3
     me-south-1:
-      AMI: ami-03e5c408594270c73
+      AMI: ami-0dc6e437aecc1bacd
     sa-east-1:
-      AMI: ami-09fe601da23206594
+      AMI: ami-090eb5659d4e6371e
     us-east-1:
-      AMI: ami-02262fb011e2bc0aa
+      AMI: ami-06a88052e3ac31bf0
     us-east-2:
-      AMI: ami-0ab996404926d90d7
+      AMI: ami-0684647c89548bb1d
     us-west-1:
-      AMI: ami-0457463ed9200cf7b
+      AMI: ami-0c3cba4b252f21775
     us-west-2:
-      AMI: ami-0ff3e116ef8ffea94
+      AMI: ami-00c247b8613d444b8
 Parameters:
   DeploymentRunnerSubnetId:
     ConstraintDescription: Should be present
@@ -116,7 +116,7 @@ Resources:
     Properties:
       AutoScalingGroupName: deployment-runner-asg-amd
       DefaultInstanceWarmup: 5
-      DesiredCapacity: "1"
+      DesiredCapacity: "0"
       LaunchTemplate:
         LaunchTemplateId:
           Ref: DeploymentRunnerLaunchTemplateamd
@@ -125,10 +125,106 @@ Resources:
             - DeploymentRunnerLaunchTemplateamd
             - LatestVersionNumber
       MaxSize: "2"
-      MinSize: "1"
+      MinSize: "0"
       VPCZoneIdentifier:
         - Ref: DeploymentRunnerSubnetId
     Type: AWS::AutoScaling::AutoScalingGroup
+  DeploymentRunnerAwsControllerServiceamd:
+    DependsOn:
+      - DeploymentRunnerClusteramd
+      - DeploymentRunnerAwsControllerTaskDefinitionamd
+    Properties:
+      Cluster:
+        Fn::Join:
+          - '-'
+          - - deployment-runner-amd
+            - Ref: OrganizationID
+      DeploymentConfiguration:
+        MaximumPercent: 100
+        MinimumHealthyPercent: 0
+      DesiredCount: 1
+      EnableECSManagedTags: false
+      EnableExecuteCommand: false
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - Ref: DeploymentRunnerSubnetId
+      PropagateTags: TASK_DEFINITION
+      SchedulingStrategy: REPLICA
+      ServiceName: deployment-runner-aws-controller-amd
+      Tags:
+        - Key: Name
+          Value: deployment-runner-aws-controller-amd
+        - Key: created by
+          Value: deployment.io
+      TaskDefinition:
+        Ref: DeploymentRunnerAwsControllerTaskDefinitionamd
+    Type: AWS::ECS::Service
+  DeploymentRunnerAwsControllerTaskDefinitionamd:
+    DependsOn:
+      - DeploymentRunnerTaskExecutionRoleamd
+      - DeploymentRunnerTaskRoleamd
+    Properties:
+      ContainerDefinitions:
+        - DisableNetworking: false
+          Environment:
+            - Name: Token
+              Value:
+                Ref: Key
+            - Name: OrganizationID
+              Value:
+                Ref: OrganizationID
+            - Name: Service
+              Value: go.deployment.io:443
+            - Name: DockerImage
+              Value: docker.io/arorankit/deployment-runner-aws-controller-amd64:1
+            - Name: Region
+              Value:
+                Ref: AWS::Region
+            - Name: CpuArch
+              Value: amd
+            - Name: Memory
+              Value: 6 GB
+            - Name: ExecutionRoleArn
+              Value:
+                Ref: DeploymentRunnerTaskExecutionRoleamd
+            - Name: TaskRoleArn
+              Value:
+                Ref: DeploymentRunnerTaskRoleamd
+          Essential: true
+          Image: docker.io/arorankit/deployment-runner-aws-controller-amd64:1
+          Interactive: false
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-create-group: "true"
+              awslogs-group: deployment-runner-aws-controller-logs-group-amd
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-stream-prefix: "1"
+          Name: deployment-runner-aws-controller-amd
+          Privileged: false
+          PseudoTerminal: false
+          ReadonlyRootFilesystem: false
+      Cpu: .25 vCPU
+      ExecutionRoleArn:
+        Ref: DeploymentRunnerTaskExecutionRoleamd
+      Family: deployment-runner-aws-controller-amd
+      Memory: 0.5 GB
+      NetworkMode: awsvpc
+      RuntimePlatform:
+        CpuArchitecture: X86_64
+        OperatingSystemFamily: LINUX
+      Tags:
+        - Key: Name
+          Value: deployment-runner-aws-controller-amd
+        - Key: created by
+          Value: deployment.io
+      TaskRoleArn:
+        Ref: DeploymentRunnerTaskRoleamd
+    Type: AWS::ECS::TaskDefinition
   DeploymentRunnerCCamd:
     DependsOn:
       - DeploymentRunnerASGamd
@@ -223,7 +319,7 @@ Resources:
       DeploymentConfiguration:
         MaximumPercent: 100
         MinimumHealthyPercent: 0
-      DesiredCount: 1
+      DesiredCount: 0
       EnableECSManagedTags: false
       EnableExecuteCommand: false
       PropagateTags: TASK_DEFINITION
@@ -254,7 +350,7 @@ Resources:
             - Name: Service
               Value: go.deployment.io:443
             - Name: DockerImage
-              Value: docker.io/arorankit/deployment-runner-amd64:16
+              Value: docker.io/arorankit/deployment-runner-amd64:17
             - Name: Region
               Value:
                 Ref: AWS::Region
@@ -269,7 +365,7 @@ Resources:
               Value:
                 Ref: DeploymentRunnerTaskRoleamd
           Essential: true
-          Image: docker.io/arorankit/deployment-runner-amd64:16
+          Image: docker.io/arorankit/deployment-runner-amd64:17
           Interactive: false
           LogConfiguration:
             LogDriver: awslogs
@@ -278,7 +374,7 @@ Resources:
               awslogs-group: deployment-runner-logs-group-amd
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: "16"
+              awslogs-stream-prefix: "17"
           MountPoints:
             - ContainerPath: /var/run/docker.sock
               SourceVolume: docker-socket
