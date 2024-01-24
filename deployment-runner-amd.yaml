@@ -3,59 +3,59 @@ Description: This will install the deployment runner on the selected subnet. The
 Mappings:
   RegionMap:
     af-south-1:
-      AMI: ami-0cc4d8e177a1cfded
+      AMI: ami-07a74725fbb49cb48
     ap-east-1:
-      AMI: ami-0d45541ed0c3e7606
+      AMI: ami-002462b60f65e3932
     ap-northeast-1:
-      AMI: ami-08ab17dfa42b980b9
+      AMI: ami-07c7a6df036bf6ecd
     ap-northeast-2:
-      AMI: ami-0cc72047d6c475dca
+      AMI: ami-0f3e2a61795a38ab9
     ap-northeast-3:
-      AMI: ami-0762a82a49ddd512b
+      AMI: ami-08d8b27a93a7466f0
     ap-south-1:
-      AMI: ami-0d3da533040e5db38
+      AMI: ami-07bb9aa4e43a2d031
     ap-south-2:
-      AMI: ami-093942206045cf2df
+      AMI: ami-0c954c4a8f788a01c
     ap-southeast-1:
-      AMI: ami-03ff08facfc9fbb03
+      AMI: ami-0a01ee19565d9edbc
     ap-southeast-2:
-      AMI: ami-030cda3b9e30e616a
+      AMI: ami-03a88663b6e6e9690
     ap-southeast-3:
-      AMI: ami-065d1e78bcf347fbd
+      AMI: ami-0e938fe88e51b9f45
     ap-southeast-4:
-      AMI: ami-0f9de645e36a44a28
+      AMI: ami-0fa88cb45b4ef5942
     ca-central-1:
-      AMI: ami-0bcba9f105f581c26
+      AMI: ami-0d3c363fb12838edf
     eu-central-1:
-      AMI: ami-086527bf131702819
+      AMI: ami-0a35d3bb530944416
     eu-central-2:
-      AMI: ami-009851106a4d3247f
+      AMI: ami-00d53d75eef59cce0
     eu-north-1:
-      AMI: ami-028426060189f4851
+      AMI: ami-0cc385dc8d1ab9e63
     eu-south-1:
-      AMI: ami-029b416085fe8a2d4
+      AMI: ami-0ac3f9e2a02f2c44d
     eu-south-2:
-      AMI: ami-04545ac10b9e9d5ec
+      AMI: ami-055cce68af553c66f
     eu-west-1:
-      AMI: ami-0343beda41e52a11f
+      AMI: ami-081e22ecac78259a3
     eu-west-2:
-      AMI: ami-0671b9efd092aabde
+      AMI: ami-066e88458207c8b25
     eu-west-3:
-      AMI: ami-055cc276fa681714a
+      AMI: ami-05f8b82b70cfa9d8c
     me-central-1:
-      AMI: ami-00071ce27b0b62671
+      AMI: ami-05154de2f1a28669a
     me-south-1:
-      AMI: ami-083aa732f807ab9fc
+      AMI: ami-0df136cf732bd6145
     sa-east-1:
-      AMI: ami-02b99d59c97ceeb44
+      AMI: ami-03a9b11afe0caa696
     us-east-1:
-      AMI: ami-0b67ae5b18bcb3ed0
+      AMI: ami-024cf340f2c79e44d
     us-east-2:
-      AMI: ami-064b777505984fff7
+      AMI: ami-0824f066b0bab3eca
     us-west-1:
-      AMI: ami-0cbdbfdc0ee506989
+      AMI: ami-0a393caabb9a09860
     us-west-2:
-      AMI: ami-0ca8c7a333e29e67d
+      AMI: ami-08c89cb3053b529ec
 Parameters:
   DeploymentRunnerSubnetId:
     ConstraintDescription: Should be present
@@ -72,19 +72,20 @@ Parameters:
     Description: '[Do not update]. This is your unique prefilled organization id.'
     Type: String
 Resources:
-  DeploymentEcsInstanceProfileamd:
+  DeploymentEcsInstanceProfilelinuxamd:
     DependsOn:
-      - DeploymentEcsInstanceRoleamd
+      - DeploymentEcsInstanceRolelinuxamd
     Properties:
       InstanceProfileName:
         Fn::Join:
           - '-'
-          - - ecsInstanceProfileamd
+          - - ecsInstanceProfilelinuxamd
             - Ref: OrganizationID
+            - Ref: AWS::Region
       Roles:
-        - Ref: DeploymentEcsInstanceRoleamd
+        - Ref: DeploymentEcsInstanceRolelinuxamd
     Type: AWS::IAM::InstanceProfile
-  DeploymentEcsInstanceRoleamd:
+  DeploymentEcsInstanceRolelinuxamd:
     Properties:
       AssumeRolePolicyDocument: |-
         {
@@ -104,40 +105,46 @@ Resources:
       RoleName:
         Fn::Join:
           - '-'
-          - - ecsInstanceRoleamd
+          - - ecsInstanceRolelinuxamd
             - Ref: OrganizationID
+            - Ref: AWS::Region
       Tags:
         - Key: created by
           Value: deployment.io
     Type: AWS::IAM::Role
-  DeploymentRunnerASGamd:
+  DeploymentRunnerASGlinuxamd:
     DependsOn:
-      - DeploymentRunnerLaunchTemplateamd
+      - DeploymentRunnerLaunchTemplatelinuxamd
     Properties:
-      AutoScalingGroupName: deployment-runner-asg-amd
+      AutoScalingGroupName:
+        Fn::Join:
+          - '-'
+          - - dr-asg-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
       DefaultInstanceWarmup: 5
       DesiredCapacity: "0"
       LaunchTemplate:
         LaunchTemplateId:
-          Ref: DeploymentRunnerLaunchTemplateamd
+          Ref: DeploymentRunnerLaunchTemplatelinuxamd
         Version:
           Fn::GetAtt:
-            - DeploymentRunnerLaunchTemplateamd
+            - DeploymentRunnerLaunchTemplatelinuxamd
             - LatestVersionNumber
       MaxSize: "2"
       MinSize: "0"
       VPCZoneIdentifier:
         - Ref: DeploymentRunnerSubnetId
     Type: AWS::AutoScaling::AutoScalingGroup
-  DeploymentRunnerAwsControllerServiceamd:
+  DeploymentRunnerAwsControllerServicelinuxamd:
     DependsOn:
-      - DeploymentRunnerClusteramd
-      - DeploymentRunnerAwsControllerTaskDefinitionamd
+      - DeploymentRunnerClusterlinuxamd
+      - DeploymentRunnerAwsControllerTaskDefinitionlinuxamd
     Properties:
       Cluster:
         Fn::Join:
           - '-'
-          - - deployment-runner-amd
+          - - dr-linuxamd
             - Ref: OrganizationID
       DeploymentConfiguration:
         MaximumPercent: 100
@@ -153,19 +160,29 @@ Resources:
             - Ref: DeploymentRunnerSubnetId
       PropagateTags: TASK_DEFINITION
       SchedulingStrategy: REPLICA
-      ServiceName: deployment-runner-aws-controller-amd
+      ServiceName:
+        Fn::Join:
+          - '-'
+          - - dr-aws-controller-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
       Tags:
         - Key: Name
-          Value: deployment-runner-aws-controller-amd
+          Value:
+            Fn::Join:
+              - '-'
+              - - dr-aws-controller-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
         - Key: created by
           Value: deployment.io
       TaskDefinition:
-        Ref: DeploymentRunnerAwsControllerTaskDefinitionamd
+        Ref: DeploymentRunnerAwsControllerTaskDefinitionlinuxamd
     Type: AWS::ECS::Service
-  DeploymentRunnerAwsControllerTaskDefinitionamd:
+  DeploymentRunnerAwsControllerTaskDefinitionlinuxamd:
     DependsOn:
-      - DeploymentRunnerTaskExecutionRoleamd
-      - DeploymentRunnerTaskRoleamd
+      - DeploymentRunnerTaskExecutionRolelinuxamd
+      - DeploymentRunnerTaskRolelinuxamd
     Properties:
       ContainerDefinitions:
         - DisableNetworking: false
@@ -179,41 +196,52 @@ Resources:
             - Name: Service
               Value: go.deployment.io:443
             - Name: DockerImage
-              Value: docker.io/arorankit/deployment-runner-aws-controller-amd64:2
+              Value: docker.io/arorankit/deployment-runner-aws-controller-amd64:3
             - Name: DockerRunnerImage
-              Value: docker.io/arorankit/deployment-runner-amd64:22
+              Value: docker.io/arorankit/deployment-runner-amd64:23
             - Name: Region
               Value:
                 Ref: AWS::Region
-            - Name: CpuArch
-              Value: amd
             - Name: Memory
               Value: 6 GB
             - Name: ExecutionRoleArn
               Value:
-                Ref: DeploymentRunnerTaskExecutionRoleamd
+                Ref: DeploymentRunnerTaskExecutionRolelinuxamd
             - Name: TaskRoleArn
               Value:
-                Ref: DeploymentRunnerTaskRoleamd
+                Ref: DeploymentRunnerTaskRolelinuxamd
+            - Name: AWSAccountID
+              Value:
+                Ref: AWS::AccountId
           Essential: true
-          Image: docker.io/arorankit/deployment-runner-aws-controller-amd64:2
+          Image: docker.io/arorankit/deployment-runner-aws-controller-amd64:3
           Interactive: false
           LogConfiguration:
             LogDriver: awslogs
             Options:
               awslogs-create-group: "true"
-              awslogs-group: deployment-runner-aws-controller-logs-group-amd
+              awslogs-group: dr-aws-controller-logs-group-linuxamd
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: "2"
-          Name: deployment-runner-aws-controller-amd
+              awslogs-stream-prefix: "3"
+          Name:
+            Fn::Join:
+              - '-'
+              - - dr-aws-controller-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
           Privileged: false
           PseudoTerminal: false
           ReadonlyRootFilesystem: false
       Cpu: .25 vCPU
       ExecutionRoleArn:
-        Ref: DeploymentRunnerTaskExecutionRoleamd
-      Family: deployment-runner-aws-controller-amd
+        Ref: DeploymentRunnerTaskExecutionRolelinuxamd
+      Family:
+        Fn::Join:
+          - '-'
+          - - dr-aws-controller-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
       Memory: 0.5 GB
       NetworkMode: awsvpc
       RuntimePlatform:
@@ -221,49 +249,68 @@ Resources:
         OperatingSystemFamily: LINUX
       Tags:
         - Key: Name
-          Value: deployment-runner-aws-controller-amd
+          Value:
+            Fn::Join:
+              - '-'
+              - - dr-aws-controller-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
         - Key: created by
           Value: deployment.io
       TaskRoleArn:
-        Ref: DeploymentRunnerTaskRoleamd
+        Ref: DeploymentRunnerTaskRolelinuxamd
     Type: AWS::ECS::TaskDefinition
-  DeploymentRunnerCCamd:
+  DeploymentRunnerCClinuxamd:
     DependsOn:
-      - DeploymentRunnerASGamd
+      - DeploymentRunnerASGlinuxamd
     Properties:
       AutoScalingGroupProvider:
         AutoScalingGroupArn:
-          Ref: DeploymentRunnerASGamd
-      Name: deployment-runner-capacity-provider-amd
+          Ref: DeploymentRunnerASGlinuxamd
+      Name:
+        Fn::Join:
+          - '-'
+          - - dr-capacity-provider-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
       Tags:
         - Key: created by
           Value: deployment.io
         - Key: capacity provider
-          Value: deployment-runner-capacity-provider-amd
+          Value:
+            Fn::Join:
+              - '-'
+              - - dr-capacity-provider-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
     Type: AWS::ECS::CapacityProvider
-  DeploymentRunnerClusteramd:
+  DeploymentRunnerClusterlinuxamd:
     DependsOn:
-      - DeploymentRunnerCCamd
+      - DeploymentRunnerCClinuxamd
     Properties:
       CapacityProviders:
         - FARGATE
-        - deployment-runner-capacity-provider-amd
+        - Fn::Join:
+            - '-'
+            - - dr-capacity-provider-linuxamd
+              - Ref: OrganizationID
+              - Ref: AWS::Region
       ClusterName:
         Fn::Join:
           - '-'
-          - - deployment-runner-amd
+          - - dr-linuxamd
             - Ref: OrganizationID
       Tags:
         - Key: created by
           Value: deployment.io
     Type: AWS::ECS::Cluster
-  DeploymentRunnerLaunchTemplateamd:
+  DeploymentRunnerLaunchTemplatelinuxamd:
     Properties:
       LaunchTemplateData:
         IamInstanceProfile:
           Arn:
             Fn::GetAtt:
-              - DeploymentEcsInstanceProfileamd
+              - DeploymentEcsInstanceProfilelinuxamd
               - Arn
         ImageId:
           Fn::FindInMap:
@@ -281,42 +328,62 @@ Resources:
               - Key: created by
                 Value: deployment.io
               - Key: instance launch template
-                Value: deployment-runner-template-amd
+                Value:
+                  Fn::Join:
+                    - '-'
+                    - - dr-template-linuxamd
+                      - Ref: OrganizationID
+                      - Ref: AWS::Region
         UserData:
           Fn::Base64:
             Fn::Join:
-              - "\n"
+              - '"\n"'
               - - '#!/bin/bash'
                 - Fn::Join:
                     - ""
-                    - - 'echo "ECS_CLUSTER='
+                    - - echo "ECS_CLUSTER=
                       - Fn::Join:
                           - '-'
-                          - - 'deployment-runner-amd'
+                          - - 'dr-linuxamd'
                             - Ref: OrganizationID
                       - '" >> /etc/ecs/ecs.config'
-      LaunchTemplateName: deployment-runner-template-amd
+      LaunchTemplateName:
+        Fn::Join:
+          - '-'
+          - - dr-template-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
       TagSpecifications:
         - ResourceType: launch-template
           Tags:
             - Key: created by
               Value: deployment.io
             - Key: launch template
-              Value: deployment-runner-template-amd
+              Value:
+                Fn::Join:
+                  - '-'
+                  - - dr-template-linuxamd
+                    - Ref: OrganizationID
+                    - Ref: AWS::Region
       VersionDescription: launch template for deployment runner ec2 instance
     Type: AWS::EC2::LaunchTemplate
-  DeploymentRunnerServiceamd:
+  DeploymentRunnerServicelinuxamd:
     DependsOn:
-      - DeploymentRunnerClusteramd
-      - DeploymentRunnerTaskDefinitionamd
+      - DeploymentRunnerClusterlinuxamd
+      - DeploymentRunnerTaskDefinitionlinuxamd
     Properties:
       CapacityProviderStrategy:
-        - CapacityProvider: deployment-runner-capacity-provider-amd
+        - CapacityProvider:
+            Fn::Join:
+              - '-'
+              - - dr-capacity-provider-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
           Weight: 1
       Cluster:
         Fn::Join:
           - '-'
-          - - deployment-runner-amd
+          - - dr-linuxamd
             - Ref: OrganizationID
       DeploymentConfiguration:
         MaximumPercent: 100
@@ -326,19 +393,29 @@ Resources:
       EnableExecuteCommand: false
       PropagateTags: TASK_DEFINITION
       SchedulingStrategy: REPLICA
-      ServiceName: deployment-runner-amd
+      ServiceName:
+        Fn::Join:
+          - '-'
+          - - dr-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
       Tags:
         - Key: Name
-          Value: deployment-runner-amd
+          Value:
+            Fn::Join:
+              - '-'
+              - - dr-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
         - Key: created by
           Value: deployment.io
       TaskDefinition:
-        Ref: DeploymentRunnerTaskDefinitionamd
+        Ref: DeploymentRunnerTaskDefinitionlinuxamd
     Type: AWS::ECS::Service
-  DeploymentRunnerTaskDefinitionamd:
+  DeploymentRunnerTaskDefinitionlinuxamd:
     DependsOn:
-      - DeploymentRunnerTaskExecutionRoleamd
-      - DeploymentRunnerTaskRoleamd
+      - DeploymentRunnerTaskExecutionRolelinuxamd
+      - DeploymentRunnerTaskRolelinuxamd
     Properties:
       ContainerDefinitions:
         - DisableNetworking: false
@@ -352,43 +429,54 @@ Resources:
             - Name: Service
               Value: go.deployment.io:443
             - Name: DockerImage
-              Value: docker.io/arorankit/deployment-runner-amd64:22
+              Value: docker.io/arorankit/deployment-runner-amd64:23
             - Name: Region
               Value:
                 Ref: AWS::Region
-            - Name: CpuArch
-              Value: amd
             - Name: Memory
               Value: 6 GB
             - Name: ExecutionRoleArn
               Value:
-                Ref: DeploymentRunnerTaskExecutionRoleamd
+                Ref: DeploymentRunnerTaskExecutionRolelinuxamd
             - Name: TaskRoleArn
               Value:
-                Ref: DeploymentRunnerTaskRoleamd
+                Ref: DeploymentRunnerTaskRolelinuxamd
+            - Name: AWSAccountID
+              Value:
+                Ref: AWS::AccountId
           Essential: true
-          Image: docker.io/arorankit/deployment-runner-amd64:22
+          Image: docker.io/arorankit/deployment-runner-amd64:23
           Interactive: false
           LogConfiguration:
             LogDriver: awslogs
             Options:
               awslogs-create-group: "true"
-              awslogs-group: deployment-runner-logs-group-amd
+              awslogs-group: dr-logs-group-linuxamd
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: "22"
+              awslogs-stream-prefix: "23"
           MountPoints:
             - ContainerPath: /var/run/docker.sock
               SourceVolume: docker-socket
             - ContainerPath: /tmp
               SourceVolume: temp
-          Name: deployment-runner-amd
+          Name:
+            Fn::Join:
+              - '-'
+              - - dr-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
           Privileged: false
           PseudoTerminal: false
           ReadonlyRootFilesystem: false
       ExecutionRoleArn:
-        Ref: DeploymentRunnerTaskExecutionRoleamd
-      Family: deployment-runner-amd
+        Ref: DeploymentRunnerTaskExecutionRolelinuxamd
+      Family:
+        Fn::Join:
+          - '-'
+          - - dr-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
       Memory: 6 GB
       NetworkMode: host
       RuntimePlatform:
@@ -396,11 +484,16 @@ Resources:
         OperatingSystemFamily: LINUX
       Tags:
         - Key: Name
-          Value: deployment-runner-amd
+          Value:
+            Fn::Join:
+              - '-'
+              - - dr-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
         - Key: created by
           Value: deployment.io
       TaskRoleArn:
-        Ref: DeploymentRunnerTaskRoleamd
+        Ref: DeploymentRunnerTaskRolelinuxamd
       Volumes:
         - Host:
             SourcePath: /var/run/docker.sock
@@ -409,7 +502,7 @@ Resources:
             SourcePath: /tmp
           Name: temp
     Type: AWS::ECS::TaskDefinition
-  DeploymentRunnerTaskExecutionRoleamd:
+  DeploymentRunnerTaskExecutionRolelinuxamd:
     Properties:
       AssumeRolePolicyDocument: |-
         {
@@ -430,13 +523,14 @@ Resources:
       RoleName:
         Fn::Join:
           - '-'
-          - - ecsTaskExecutionRole-amd
+          - - eTERole-linuxamd
             - Ref: OrganizationID
+            - Ref: AWS::Region
       Tags:
         - Key: created by
           Value: deployment.io
     Type: AWS::IAM::Role
-  DeploymentRunnerTaskRoleamd:
+  DeploymentRunnerTaskRolelinuxamd:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
@@ -492,11 +586,26 @@ Resources:
                         - Ref: AWS::AccountId
                         - :role/ecs.amazonaws.com/*
             Version: "2012-10-17"
-          PolicyName: deployment-runner-policy
-      RoleName: deployment-runner-task-role-amd
+          PolicyName:
+            Fn::Join:
+              - '-'
+              - - dr-policy-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
+      RoleName:
+        Fn::Join:
+          - '-'
+          - - dr-task-role-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
       Tags:
         - Key: Name
-          Value: deployment-runner-task-role-amd
+          Value:
+            Fn::Join:
+              - '-'
+              - - dr-task-role-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
         - Key: created by
           Value: deployment.io
     Type: AWS::IAM::Role
