@@ -337,11 +337,11 @@ Resources:
         UserData:
           Fn::Base64:
             Fn::Join:
-              - '"\n"'
+              - "\n"
               - - '#!/bin/bash'
                 - Fn::Join:
                     - ""
-                    - - echo "ECS_CLUSTER=
+                    - - 'echo "ECS_CLUSTER='
                       - Fn::Join:
                           - '-'
                           - - 'dr-linuxamd'
