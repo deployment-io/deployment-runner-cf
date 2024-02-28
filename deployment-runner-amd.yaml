@@ -3,63 +3,64 @@ Description: This will install the deployment runner on the selected subnet. The
 Mappings:
   RegionMap:
     af-south-1:
-      AMI: ami-07a74725fbb49cb48
+      AMI: ami-0a232c9ccd8740698
     ap-east-1:
-      AMI: ami-002462b60f65e3932
+      AMI: ami-0b3151bbabd76af2a
     ap-northeast-1:
-      AMI: ami-07c7a6df036bf6ecd
+      AMI: ami-05bbece3387b2a514
     ap-northeast-2:
-      AMI: ami-0f3e2a61795a38ab9
+      AMI: ami-0df4b7656a454355a
     ap-northeast-3:
-      AMI: ami-08d8b27a93a7466f0
+      AMI: ami-0ce7f5b6882aa18ff
     ap-south-1:
-      AMI: ami-07bb9aa4e43a2d031
+      AMI: ami-0ea6f6845dd370ae8
     ap-south-2:
-      AMI: ami-0c954c4a8f788a01c
+      AMI: ami-0084c0bfca76b2331
     ap-southeast-1:
-      AMI: ami-0a01ee19565d9edbc
+      AMI: ami-0427416aa4778f308
     ap-southeast-2:
-      AMI: ami-03a88663b6e6e9690
+      AMI: ami-004083b0e6d308856
     ap-southeast-3:
-      AMI: ami-0e938fe88e51b9f45
+      AMI: ami-0772daf511354ce66
     ap-southeast-4:
-      AMI: ami-0fa88cb45b4ef5942
+      AMI: ami-0695c9139abbb72b4
     ca-central-1:
-      AMI: ami-0d3c363fb12838edf
+      AMI: ami-0987188c732edc024
     eu-central-1:
-      AMI: ami-0a35d3bb530944416
+      AMI: ami-03980a7388d0e670b
     eu-central-2:
-      AMI: ami-00d53d75eef59cce0
+      AMI: ami-0c7700188c09aa726
     eu-north-1:
-      AMI: ami-0cc385dc8d1ab9e63
+      AMI: ami-0952b6ddb6f06b7e5
     eu-south-1:
-      AMI: ami-0ac3f9e2a02f2c44d
+      AMI: ami-044861cbd23006847
     eu-south-2:
-      AMI: ami-055cce68af553c66f
+      AMI: ami-05386d6d8905ad7ea
     eu-west-1:
-      AMI: ami-081e22ecac78259a3
+      AMI: ami-03f366cb6203f4751
     eu-west-2:
-      AMI: ami-066e88458207c8b25
+      AMI: ami-0115654882632e5be
     eu-west-3:
-      AMI: ami-05f8b82b70cfa9d8c
+      AMI: ami-0ae30e8888f3ce37f
     me-central-1:
-      AMI: ami-05154de2f1a28669a
+      AMI: ami-0c86dafd8907aa73b
     me-south-1:
-      AMI: ami-0df136cf732bd6145
+      AMI: ami-030f08693d57ab0c4
     sa-east-1:
-      AMI: ami-03a9b11afe0caa696
+      AMI: ami-044486e89d1a58b0c
     us-east-1:
-      AMI: ami-024cf340f2c79e44d
+      AMI: ami-0456422a55e2fa418
     us-east-2:
-      AMI: ami-0824f066b0bab3eca
+      AMI: ami-02c46b5c97473a609
     us-west-1:
-      AMI: ami-0a393caabb9a09860
+      AMI: ami-0f804644295f0f40a
     us-west-2:
-      AMI: ami-08c89cb3053b529ec
+      AMI: ami-0010957836340aead
 Parameters:
   DeploymentRunnerSubnetId:
-    ConstraintDescription: Should be present
-    Description: Please select Subnet where the runner will be deployed.
+    AllowedPattern: ^(?!\s*$).+
+    ConstraintDescription: Subnet is required
+    Description: '[Required]. Please select Subnet where the runner will be deployed.'
     Type: AWS::EC2::Subnet::Id
   Key:
     AllowedPattern: ^[a-zA-Z0-9]+$
