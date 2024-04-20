@@ -3,59 +3,59 @@ Description: This will install the deployment runner on the selected subnet. The
 Mappings:
   RegionMap:
     af-south-1:
-      AMI: ami-0a232c9ccd8740698
+      AMI: ami-03038f8d9f9f52dca
     ap-east-1:
-      AMI: ami-0b3151bbabd76af2a
+      AMI: ami-068164afbc3dd6fd5
     ap-northeast-1:
-      AMI: ami-05bbece3387b2a514
+      AMI: ami-00c7135a72823a950
     ap-northeast-2:
-      AMI: ami-0df4b7656a454355a
+      AMI: ami-082d30392d792c25a
     ap-northeast-3:
-      AMI: ami-0ce7f5b6882aa18ff
+      AMI: ami-056dbf6eb93216369
     ap-south-1:
-      AMI: ami-0ea6f6845dd370ae8
+      AMI: ami-0b63d2d331f0d2061
     ap-south-2:
-      AMI: ami-0084c0bfca76b2331
+      AMI: ami-01c6033c968739b8e
     ap-southeast-1:
-      AMI: ami-0427416aa4778f308
+      AMI: ami-079a2f2d80d7b89b0
     ap-southeast-2:
-      AMI: ami-004083b0e6d308856
+      AMI: ami-02948adc33e5dd36f
     ap-southeast-3:
-      AMI: ami-0772daf511354ce66
+      AMI: ami-0ae911ba7fbbfbbbf
     ap-southeast-4:
-      AMI: ami-0695c9139abbb72b4
+      AMI: ami-03c20fe71228a4ca0
     ca-central-1:
-      AMI: ami-0987188c732edc024
+      AMI: ami-0e43c26a886f59006
     eu-central-1:
-      AMI: ami-03980a7388d0e670b
+      AMI: ami-0bd1c0717dbaa1435
     eu-central-2:
-      AMI: ami-0c7700188c09aa726
+      AMI: ami-0513f7ed6e8558290
     eu-north-1:
-      AMI: ami-0952b6ddb6f06b7e5
+      AMI: ami-0f32604121af5fbf9
     eu-south-1:
-      AMI: ami-044861cbd23006847
+      AMI: ami-08e9c8e6f5dc46e76
     eu-south-2:
-      AMI: ami-05386d6d8905ad7ea
+      AMI: ami-03d5c17da19da1446
     eu-west-1:
-      AMI: ami-03f366cb6203f4751
+      AMI: ami-05df080eaa0931515
     eu-west-2:
-      AMI: ami-0115654882632e5be
+      AMI: ami-01480dd43a07bc8e1
     eu-west-3:
-      AMI: ami-0ae30e8888f3ce37f
+      AMI: ami-0bdc8c6c7b2886c2f
     me-central-1:
-      AMI: ami-0c86dafd8907aa73b
+      AMI: ami-01c1188cd04d6177e
     me-south-1:
-      AMI: ami-030f08693d57ab0c4
+      AMI: ami-095ac67cc552015c2
     sa-east-1:
-      AMI: ami-044486e89d1a58b0c
+      AMI: ami-0f3a51014b3aa698c
     us-east-1:
-      AMI: ami-0456422a55e2fa418
+      AMI: ami-0bd2f238e75f8092a
     us-east-2:
-      AMI: ami-02c46b5c97473a609
+      AMI: ami-0274f8fb224cdeb62
     us-west-1:
-      AMI: ami-0f804644295f0f40a
+      AMI: ami-08d805d2f0cd79d38
     us-west-2:
-      AMI: ami-0010957836340aead
+      AMI: ami-00e82bde1972a08b8
 Parameters:
   DeploymentRunnerSubnetId:
     AllowedPattern: ^(?!\s*$).+
@@ -113,6 +113,71 @@ Resources:
         - Key: created by
           Value: deployment.io
     Type: AWS::IAM::Role
+  DeploymentLambdaCustomResourcelinuxamd:
+    DependsOn:
+      - DeploymentWaitConditionHandlelinuxamd
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - DeploymentLambdalinuxamd
+          - Arn
+    Type: AWS::CloudFormation::CustomResource
+  DeploymentLambdalinuxamd:
+    Properties:
+      Code:
+        ZipFile: |4+
+            import json
+            import urllib3
+            import os
+            import boto3
+            import time
+            import cfnresponse
+            import uuid
+        
+            http = urllib3.PoolManager()
+        
+        
+            def handler(event, context):
+                if event.get('RequestType') == 'Delete':
+                    response_data = {'message': 'Deleting lambda'}
+                    cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
+                    return
+                create_ecs_service_linked_role()
+                encoded_body = json.dumps({
+                    "Status": "SUCCESS",
+                    "Reason": "ECS service link role setup completed",
+                    "UniqueId": str(uuid.uuid4()),
+                    "Data": "ECS service link role setup completed"
+                })
+                http.request('PUT', os.environ['WAIT_URL'], body=encoded_body)
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, {'message': 'Done executing lambda'})
+                return
+        
+        
+            def create_ecs_service_linked_role():
+                iam = boto3.client('iam')
+                try:
+                    iam.create_service_linked_role(AWSServiceName='ecs.amazonaws.com')
+                    time.sleep(60)
+                except:
+                    return
+
+      Description: Check if AWS ECS Service linked Role exists. If not, create it and wait for it to be stable
+      Environment:
+        Variables:
+          WAIT_URL:
+            Ref: DeploymentWaitConditionHandlelinuxamd
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - DeploymentRunnerLambdaRolelinuxamd
+          - Arn
+      Runtime: python3.9
+      Tags:
+        - Key: created by
+          Value: deployment.io
+      Timeout: 100
+    Type: AWS::Lambda::Function
   DeploymentRunnerASGlinuxamd:
     DependsOn:
       - DeploymentRunnerLaunchTemplatelinuxamd
@@ -197,9 +262,9 @@ Resources:
             - Name: Service
               Value: go.deployment.io:443
             - Name: DockerImage
-              Value: docker.io/arorankit/deployment-runner-aws-controller-amd64:3
+              Value: docker.io/arorankit/deployment-runner-aws-controller-amd64:4
             - Name: DockerRunnerImage
-              Value: docker.io/arorankit/deployment-runner-amd64:26
+              Value: docker.io/arorankit/deployment-runner-amd64:27
             - Name: Region
               Value:
                 Ref: AWS::Region
@@ -215,7 +280,7 @@ Resources:
               Value:
                 Ref: AWS::AccountId
           Essential: true
-          Image: docker.io/arorankit/deployment-runner-aws-controller-amd64:3
+          Image: docker.io/arorankit/deployment-runner-aws-controller-amd64:4
           Interactive: false
           LogConfiguration:
             LogDriver: awslogs
@@ -224,7 +289,7 @@ Resources:
               awslogs-group: dr-aws-controller-logs-group-linuxamd
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: "3"
+              awslogs-stream-prefix: "4"
           Name:
             Fn::Join:
               - '-'
@@ -264,6 +329,7 @@ Resources:
   DeploymentRunnerCClinuxamd:
     DependsOn:
       - DeploymentRunnerASGlinuxamd
+      - DeploymentWaitConditionlinuxamd
     Properties:
       AutoScalingGroupProvider:
         AutoScalingGroupArn:
@@ -305,6 +371,57 @@ Resources:
         - Key: created by
           Value: deployment.io
     Type: AWS::ECS::Cluster
+  DeploymentRunnerLambdaRolelinuxamd:
+    Properties:
+      AssumeRolePolicyDocument: |-
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        }
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - iam:CreateServiceLinkedRole
+                Condition:
+                  StringLike:
+                    iam:AWSServiceName: ecs.amazonaws.com
+                Effect: Allow
+                Resource:
+                  - arn:aws:iam::*:role/aws-service-role/ecs.amazonaws.com/*
+                Sid: "01"
+              - Action:
+                  - iam:AttachRolePolicy
+                  - iam:PutRolePolicy
+                Effect: Allow
+                Resource:
+                  - arn:aws:iam::*:role/aws-service-role/ecs.amazonaws.com/*
+                Sid: "02"
+            Version: "2012-10-17"
+          PolicyName:
+            Fn::Join:
+              - '-'
+              - - dr-lambda-policy-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
+      RoleName:
+        Fn::Join:
+          - '-'
+          - - dr-lambda-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
+      Tags:
+        - Key: created by
+          Value: deployment.io
+    Type: AWS::IAM::Role
   DeploymentRunnerLaunchTemplatelinuxamd:
     Properties:
       LaunchTemplateData:
@@ -430,7 +547,7 @@ Resources:
             - Name: Service
               Value: go.deployment.io:443
             - Name: DockerImage
-              Value: docker.io/arorankit/deployment-runner-amd64:26
+              Value: docker.io/arorankit/deployment-runner-amd64:27
             - Name: Region
               Value:
                 Ref: AWS::Region
@@ -446,7 +563,7 @@ Resources:
               Value:
                 Ref: AWS::AccountId
           Essential: true
-          Image: docker.io/arorankit/deployment-runner-amd64:26
+          Image: docker.io/arorankit/deployment-runner-amd64:27
           Interactive: false
           LogConfiguration:
             LogDriver: awslogs
@@ -455,7 +572,7 @@ Resources:
               awslogs-group: dr-logs-group-linuxamd
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: "26"
+              awslogs-stream-prefix: "27"
           MountPoints:
             - ContainerPath: /var/run/docker.sock
               SourceVolume: docker-socket
@@ -556,29 +673,24 @@ Resources:
                 - ecs-tasks.amazonaws.com
         Version: "2012-10-17"
       Description: This IAM Role is assigned to deployment runner task installed on your AWS account. At no point access is given to any other account or task.
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/CloudFrontFullAccess
-        - arn:aws:iam::aws:policy/AmazonS3FullAccess
-        - arn:aws:iam::aws:policy/AmazonRoute53FullAccess
-        - arn:aws:iam::aws:policy/AWSCertificateManagerFullAccess
-        - arn:aws:iam::aws:policy/CloudWatchFullAccess
-        - arn:aws:iam::aws:policy/AmazonECS_FullAccess
-        - arn:aws:iam::aws:policy/AmazonEC2FullAccess
-        - arn:aws:iam::aws:policy/IAMFullAccess
-        - arn:aws:iam::aws:policy/AWSKeyManagementServicePowerUser
       Policies:
         - PolicyDocument:
             Statement:
               - Action:
-                  - ecr:*
+                  - iam:PutRolePolicy
+                  - iam:GetRolePolicy
+                  - iam:GetRole
+                  - iam:PassRole
                 Effect: Allow
                 Resource:
-                  - '*'
+                  - Fn::Join:
+                      - ""
+                      - - 'arn:aws:iam::'
+                        - Ref: AWS::AccountId
+                        - :role/*
+                Sid: "01"
               - Action:
                   - iam:CreateServiceLinkedRole
-                Condition:
-                  StringLike:
-                    iam:AWSServiceName: ecs.amazonaws.com
                 Effect: Allow
                 Resource:
                   - Fn::Join:
@@ -586,6 +698,12 @@ Resources:
                       - - 'arn:aws:iam::'
                         - Ref: AWS::AccountId
                         - :role/ecs.amazonaws.com/*
+                  - Fn::Join:
+                      - ""
+                      - - 'arn:aws:iam::'
+                        - Ref: AWS::AccountId
+                        - :role/aws-service-role/elasticloadbalancing.amazonaws.com/*
+                Sid: "02"
             Version: "2012-10-17"
           PolicyName:
             Fn::Join:
@@ -610,3 +728,12 @@ Resources:
         - Key: created by
           Value: deployment.io
     Type: AWS::IAM::Role
+  DeploymentWaitConditionHandlelinuxamd:
+    Properties: {}
+    Type: AWS::CloudFormation::WaitConditionHandle
+  DeploymentWaitConditionlinuxamd:
+    Properties:
+      Handle:
+        Ref: DeploymentWaitConditionHandlelinuxamd
+      Timeout: "300"
+    Type: AWS::CloudFormation::WaitCondition
