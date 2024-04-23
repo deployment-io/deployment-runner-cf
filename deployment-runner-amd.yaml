@@ -142,6 +142,10 @@ Resources:
                     response_data = {'message': 'Deleting lambda'}
                     cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
                     return
+                try:
+                    track_cloudformation_start()
+                except:
+                    print("failed to track cloudformation start")
                 create_ecs_service_linked_role()
                 encoded_body = json.dumps({
                     "Status": "SUCCESS",
@@ -161,10 +165,31 @@ Resources:
                     time.sleep(60)
                 except:
                     return
+        
+        
+            def track_cloudformation_start():
+                url = "https://api.deployment.io/v1/onboarding/cf-start"
+                payload = json.dumps({
+                    "organizationId": os.environ['ORGANIZATION_ID'],
+                    "token": os.environ['TOKEN'],
+                })
+                headers = {
+                    'Content-Type': 'application/json'
+                }
+                resp = http.request("POST", url,
+                                    body=payload,
+                                    headers=headers,
+                                    retries=False)
+        
+                return
 
       Description: Check if AWS ECS Service linked Role exists. If not, create it and wait for it to be stable
       Environment:
         Variables:
+          ORGANIZATION_ID:
+            Ref: OrganizationID
+          TOKEN:
+            Ref: Key
           WAIT_URL:
             Ref: DeploymentWaitConditionHandlelinuxamd
       Handler: index.handler
