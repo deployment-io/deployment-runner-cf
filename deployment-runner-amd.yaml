@@ -3,59 +3,59 @@ Description: This will install the deployment runner on the selected subnet. The
 Mappings:
   RegionMap:
     af-south-1:
-      AMI: ami-03038f8d9f9f52dca
+      AMI: ami-0e1dbf2a7c909efbe
     ap-east-1:
-      AMI: ami-068164afbc3dd6fd5
+      AMI: ami-0c3d854d4a24ff64e
     ap-northeast-1:
-      AMI: ami-00c7135a72823a950
+      AMI: ami-0f2e24673baad078e
     ap-northeast-2:
-      AMI: ami-082d30392d792c25a
+      AMI: ami-0a19aecb338658302
     ap-northeast-3:
-      AMI: ami-056dbf6eb93216369
+      AMI: ami-066c610bc6845062f
     ap-south-1:
-      AMI: ami-0b63d2d331f0d2061
+      AMI: ami-05d55f9bf0c4ffcf9
     ap-south-2:
-      AMI: ami-01c6033c968739b8e
+      AMI: ami-0832c96044d8fb8f9
     ap-southeast-1:
-      AMI: ami-079a2f2d80d7b89b0
+      AMI: ami-0fe288f5042d28ac0
     ap-southeast-2:
-      AMI: ami-02948adc33e5dd36f
+      AMI: ami-0cc25923e20d463eb
     ap-southeast-3:
-      AMI: ami-0ae911ba7fbbfbbbf
+      AMI: ami-02e492241cfcc0189
     ap-southeast-4:
-      AMI: ami-03c20fe71228a4ca0
+      AMI: ami-026cc427f472c6aaf
     ca-central-1:
-      AMI: ami-0e43c26a886f59006
+      AMI: ami-01531eed9a0d51b43
     eu-central-1:
-      AMI: ami-0bd1c0717dbaa1435
+      AMI: ami-0cbd81907163b83b1
     eu-central-2:
-      AMI: ami-0513f7ed6e8558290
+      AMI: ami-0dd4d0c7842b0e3ae
     eu-north-1:
-      AMI: ami-0f32604121af5fbf9
+      AMI: ami-027c0bac11fd4d20f
     eu-south-1:
-      AMI: ami-08e9c8e6f5dc46e76
+      AMI: ami-06ebfd62e96bd9caa
     eu-south-2:
-      AMI: ami-03d5c17da19da1446
+      AMI: ami-09833b643c6926204
     eu-west-1:
-      AMI: ami-05df080eaa0931515
+      AMI: ami-0689dbb0e33c7d5f4
     eu-west-2:
-      AMI: ami-01480dd43a07bc8e1
+      AMI: ami-00f1e258fb6d8b689
     eu-west-3:
-      AMI: ami-0bdc8c6c7b2886c2f
+      AMI: ami-02b40ef41190f1c86
     me-central-1:
-      AMI: ami-01c1188cd04d6177e
+      AMI: ami-00bdf7eaf76ed2b04
     me-south-1:
-      AMI: ami-095ac67cc552015c2
+      AMI: ami-0f9b385705ef3238c
     sa-east-1:
-      AMI: ami-0f3a51014b3aa698c
+      AMI: ami-0bf9c000706c59c8b
     us-east-1:
-      AMI: ami-0bd2f238e75f8092a
+      AMI: ami-0d28ec7fa075954c9
     us-east-2:
-      AMI: ami-0274f8fb224cdeb62
+      AMI: ami-0ce99818520ae81ce
     us-west-1:
-      AMI: ami-08d805d2f0cd79d38
+      AMI: ami-0cedccaf7e63524e2
     us-west-2:
-      AMI: ami-00e82bde1972a08b8
+      AMI: ami-03976743ed65d4f9e
 Parameters:
   DeploymentRunnerSubnetId:
     AllowedPattern: ^(?!\s*$).+
@@ -127,6 +127,7 @@ Resources:
       Code:
         ZipFile: |4+
             import json
+        
             import urllib3
             import os
             import boto3
@@ -147,14 +148,15 @@ Resources:
                 except:
                     print("failed to track cloudformation start")
                 create_ecs_service_linked_role()
+                arn = create_or_get_ecs_task_execution_role()
                 encoded_body = json.dumps({
                     "Status": "SUCCESS",
                     "Reason": "ECS service link role setup completed",
                     "UniqueId": str(uuid.uuid4()),
                     "Data": "ECS service link role setup completed"
                 })
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, {'message': 'Done executing lambda', 'eteRoleArn': arn})
                 http.request('PUT', os.environ['WAIT_URL'], body=encoded_body)
-                cfnresponse.send(event, context, cfnresponse.SUCCESS, {'message': 'Done executing lambda'})
                 return
         
         
@@ -165,6 +167,51 @@ Resources:
                     time.sleep(60)
                 except:
                     return
+        
+        
+            roleTrustPolicy = """{
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "ecs-tasks.amazonaws.com"
+                  },
+                  "Action": "sts:AssumeRole"
+                }
+              ]
+            }"""
+        
+        
+            def create_or_get_ecs_task_execution_role():
+                iam = boto3.client('iam')
+                try:
+                    response = iam.get_role(RoleName=os.environ['ECS_TASK_EXECUTION_ROLE_NAME'])
+                    return response['Role']['Arn']
+        
+                except:
+                    pass
+        
+                try:
+                    response = iam.create_role(RoleName=os.environ['ECS_TASK_EXECUTION_ROLE_NAME'],
+                                               AssumeRolePolicyDocument=roleTrustPolicy,
+                                               Tags=[
+                                                   {
+                                                       'Key': 'created by',
+                                                       'Value': 'deployment.io'
+                                                   }
+                                               ])
+                    iam.attach_role_policy(
+                        RoleName=os.environ['ECS_TASK_EXECUTION_ROLE_NAME'],
+                        PolicyArn='arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
+                    )
+                    iam.attach_role_policy(
+                        RoleName=os.environ['ECS_TASK_EXECUTION_ROLE_NAME'],
+                        PolicyArn='arn:aws:iam::aws:policy/CloudWatchFullAccess'
+                    )
+                    return response['Role']['Arn']
+                except:
+                    return "arn is not valid"
         
         
             def track_cloudformation_start():
@@ -186,6 +233,12 @@ Resources:
       Description: Check if AWS ECS Service linked Role exists. If not, create it and wait for it to be stable
       Environment:
         Variables:
+          ECS_TASK_EXECUTION_ROLE_NAME:
+            Fn::Join:
+              - '-'
+              - - eTERole-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
           ORGANIZATION_ID:
             Ref: OrganizationID
           TOKEN:
@@ -272,7 +325,7 @@ Resources:
     Type: AWS::ECS::Service
   DeploymentRunnerAwsControllerTaskDefinitionlinuxamd:
     DependsOn:
-      - DeploymentRunnerTaskExecutionRolelinuxamd
+      - DeploymentWaitConditionlinuxamd
       - DeploymentRunnerTaskRolelinuxamd
     Properties:
       ContainerDefinitions:
@@ -297,7 +350,9 @@ Resources:
               Value: 6 GB
             - Name: ExecutionRoleArn
               Value:
-                Ref: DeploymentRunnerTaskExecutionRolelinuxamd
+                Fn::GetAtt:
+                  - DeploymentLambdaCustomResourcelinuxamd
+                  - eteRoleArn
             - Name: TaskRoleArn
               Value:
                 Ref: DeploymentRunnerTaskRolelinuxamd
@@ -326,7 +381,9 @@ Resources:
           ReadonlyRootFilesystem: false
       Cpu: .25 vCPU
       ExecutionRoleArn:
-        Ref: DeploymentRunnerTaskExecutionRolelinuxamd
+        Fn::GetAtt:
+          - DeploymentLambdaCustomResourcelinuxamd
+          - eteRoleArn
       Family:
         Fn::Join:
           - '-'
@@ -424,11 +481,14 @@ Resources:
                   - arn:aws:iam::*:role/aws-service-role/ecs.amazonaws.com/*
                 Sid: "01"
               - Action:
+                  - iam:CreateRole
+                  - iam:GetRole
+                  - iam:TagRole
                   - iam:AttachRolePolicy
                   - iam:PutRolePolicy
                 Effect: Allow
                 Resource:
-                  - arn:aws:iam::*:role/aws-service-role/ecs.amazonaws.com/*
+                  - arn:aws:iam::*:role/*
                 Sid: "02"
             Version: "2012-10-17"
           PolicyName:
@@ -557,7 +617,7 @@ Resources:
     Type: AWS::ECS::Service
   DeploymentRunnerTaskDefinitionlinuxamd:
     DependsOn:
-      - DeploymentRunnerTaskExecutionRolelinuxamd
+      - DeploymentWaitConditionlinuxamd
       - DeploymentRunnerTaskRolelinuxamd
     Properties:
       ContainerDefinitions:
@@ -580,7 +640,9 @@ Resources:
               Value: 6 GB
             - Name: ExecutionRoleArn
               Value:
-                Ref: DeploymentRunnerTaskExecutionRolelinuxamd
+                Fn::GetAtt:
+                  - DeploymentLambdaCustomResourcelinuxamd
+                  - eteRoleArn
             - Name: TaskRoleArn
               Value:
                 Ref: DeploymentRunnerTaskRolelinuxamd
@@ -613,7 +675,9 @@ Resources:
           PseudoTerminal: false
           ReadonlyRootFilesystem: false
       ExecutionRoleArn:
-        Ref: DeploymentRunnerTaskExecutionRolelinuxamd
+        Fn::GetAtt:
+          - DeploymentLambdaCustomResourcelinuxamd
+          - eteRoleArn
       Family:
         Fn::Join:
           - '-'
@@ -645,34 +709,6 @@ Resources:
             SourcePath: /tmp
           Name: temp
     Type: AWS::ECS::TaskDefinition
-  DeploymentRunnerTaskExecutionRolelinuxamd:
-    Properties:
-      AssumeRolePolicyDocument: |-
-        {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "ecs-tasks.amazonaws.com"
-              },
-              "Action": "sts:AssumeRole"
-            }
-          ]
-        }
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-        - arn:aws:iam::aws:policy/CloudWatchFullAccess
-      RoleName:
-        Fn::Join:
-          - '-'
-          - - eTERole-linuxamd
-            - Ref: OrganizationID
-            - Ref: AWS::Region
-      Tags:
-        - Key: created by
-          Value: deployment.io
-    Type: AWS::IAM::Role
   DeploymentRunnerTaskRolelinuxamd:
     Properties:
       AssumeRolePolicyDocument:
