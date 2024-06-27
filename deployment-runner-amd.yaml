@@ -3,59 +3,59 @@ Description: This will install the deployment runner on the selected subnet. The
 Mappings:
   RegionMap:
     af-south-1:
-      AMI: ami-0e1dbf2a7c909efbe
+      AMI: ami-0975669d73712598a
     ap-east-1:
-      AMI: ami-0c3d854d4a24ff64e
+      AMI: ami-0d6b155ff859f4d14
     ap-northeast-1:
-      AMI: ami-0f2e24673baad078e
+      AMI: ami-0f2fa1d3ea9272caa
     ap-northeast-2:
-      AMI: ami-0a19aecb338658302
+      AMI: ami-0b1b1d998c897741d
     ap-northeast-3:
-      AMI: ami-066c610bc6845062f
+      AMI: ami-0a13f5a4c4d2e5c08
     ap-south-1:
-      AMI: ami-05d55f9bf0c4ffcf9
+      AMI: ami-0e8d7f93a49469d2d
     ap-south-2:
-      AMI: ami-0832c96044d8fb8f9
+      AMI: ami-0bde37933a37724a5
     ap-southeast-1:
-      AMI: ami-0fe288f5042d28ac0
+      AMI: ami-0ed541c8906941712
     ap-southeast-2:
-      AMI: ami-0cc25923e20d463eb
+      AMI: ami-0c23f4270be44a9da
     ap-southeast-3:
-      AMI: ami-02e492241cfcc0189
+      AMI: ami-0497c115a07e01632
     ap-southeast-4:
-      AMI: ami-026cc427f472c6aaf
+      AMI: ami-0912265fd44d7e27b
     ca-central-1:
-      AMI: ami-01531eed9a0d51b43
+      AMI: ami-0ee032def052ae4c4
     eu-central-1:
-      AMI: ami-0cbd81907163b83b1
+      AMI: ami-0891d26d57c34edb2
     eu-central-2:
-      AMI: ami-0dd4d0c7842b0e3ae
+      AMI: ami-0d165945b4e2339da
     eu-north-1:
-      AMI: ami-027c0bac11fd4d20f
+      AMI: ami-0c6221e52e58d3af9
     eu-south-1:
-      AMI: ami-06ebfd62e96bd9caa
+      AMI: ami-074dca56a76155183
     eu-south-2:
-      AMI: ami-09833b643c6926204
+      AMI: ami-00d90e9fd566b8f63
     eu-west-1:
-      AMI: ami-0689dbb0e33c7d5f4
+      AMI: ami-0df4c8d86799bdd6c
     eu-west-2:
-      AMI: ami-00f1e258fb6d8b689
+      AMI: ami-03c4db0cd81938fab
     eu-west-3:
-      AMI: ami-02b40ef41190f1c86
+      AMI: ami-0e960aa85b213e48e
     me-central-1:
-      AMI: ami-00bdf7eaf76ed2b04
+      AMI: ami-03d164b530f1fa881
     me-south-1:
-      AMI: ami-0f9b385705ef3238c
+      AMI: ami-00053559626fbf823
     sa-east-1:
-      AMI: ami-0bf9c000706c59c8b
+      AMI: ami-0c916f10d18aeaf9c
     us-east-1:
-      AMI: ami-0d28ec7fa075954c9
+      AMI: ami-06cca60323f364d34
     us-east-2:
-      AMI: ami-0ce99818520ae81ce
+      AMI: ami-08c28b1459eedeabd
     us-west-1:
-      AMI: ami-0cedccaf7e63524e2
+      AMI: ami-0f6282f9a53e59286
     us-west-2:
-      AMI: ami-03976743ed65d4f9e
+      AMI: ami-0816b6df20ad41aa6
 Parameters:
   DeploymentRunnerSubnetId:
     AllowedPattern: ^(?!\s*$).+
@@ -208,6 +208,10 @@ Resources:
                     iam.attach_role_policy(
                         RoleName=os.environ['ECS_TASK_EXECUTION_ROLE_NAME'],
                         PolicyArn='arn:aws:iam::aws:policy/CloudWatchFullAccess'
+                    )
+                    iam.attach_role_policy(
+                        RoleName=os.environ['ECS_TASK_EXECUTION_ROLE_NAME'],
+                        PolicyArn='arn:aws:iam::aws:policy/SecretsManagerReadWrite'
                     )
                     return response['Role']['Arn']
                 except:
