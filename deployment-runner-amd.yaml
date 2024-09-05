@@ -3,59 +3,59 @@ Description: This will install the deployment runner on the selected subnet. The
 Mappings:
   RegionMap:
     af-south-1:
-      AMI: ami-0c855c01eedb3ddf5
+      AMI: ami-04a4d5340d7c6f5a8
     ap-east-1:
-      AMI: ami-0aee12f2a6dd3e715
+      AMI: ami-0bb6b2c20c79249d9
     ap-northeast-1:
-      AMI: ami-09363ef7dc62e5829
+      AMI: ami-01e9b1393f6f885a6
     ap-northeast-2:
-      AMI: ami-0c40799845f92a171
+      AMI: ami-0aea0366403b20ba4
     ap-northeast-3:
-      AMI: ami-0c2de8f6f8137842c
+      AMI: ami-0c4af26e0fe378594
     ap-south-1:
-      AMI: ami-0c9f73e9af1e90a36
+      AMI: ami-018bf378c35021448
     ap-south-2:
-      AMI: ami-0fdcbaa785ec70cc4
+      AMI: ami-02ab24bbb70d8b23d
     ap-southeast-1:
-      AMI: ami-0210f4d072a0aa24d
+      AMI: ami-084a70ad874e38927
     ap-southeast-2:
-      AMI: ami-02222a138e83a41ea
+      AMI: ami-05eed9f4669298905
     ap-southeast-3:
-      AMI: ami-064ed9bf42ecd17f5
+      AMI: ami-04efe11c355a08799
     ap-southeast-4:
-      AMI: ami-01603f6e70bcfcfa8
+      AMI: ami-0422de4da5b499e43
     ca-central-1:
-      AMI: ami-07e10cca6737061a1
+      AMI: ami-09e3a92e7e915066a
     eu-central-1:
-      AMI: ami-06613f07ff066c822
+      AMI: ami-0f57826d62bc45f9a
     eu-central-2:
-      AMI: ami-090b36b8436f3878d
+      AMI: ami-0e0e1ce4dd6fdd547
     eu-north-1:
-      AMI: ami-0675376053a7fffa0
+      AMI: ami-03ae2981efe8fdf66
     eu-south-1:
-      AMI: ami-062f761b40e5218fa
+      AMI: ami-0ab85d5846ff5b685
     eu-south-2:
-      AMI: ami-0232326edaaf50d17
+      AMI: ami-07d4ca1170cb1cc96
     eu-west-1:
-      AMI: ami-0042cec5e1d1a3dcf
+      AMI: ami-072dfd6f721064ef5
     eu-west-2:
-      AMI: ami-0aa97b271e0863c88
+      AMI: ami-091af47000bc0bcc1
     eu-west-3:
-      AMI: ami-0a49936ea45f55721
+      AMI: ami-0fa70be5370f3acba
     me-central-1:
-      AMI: ami-00354be2c85dc6790
+      AMI: ami-01e71868cf9d675ff
     me-south-1:
-      AMI: ami-0385a2b48f779ff76
+      AMI: ami-03fada5f088680262
     sa-east-1:
-      AMI: ami-05b90eaea7e36230b
+      AMI: ami-0de65f7c84423a28f
     us-east-1:
-      AMI: ami-03a4566c745ed2654
+      AMI: ami-0b5f24ecac7c8ece8
     us-east-2:
-      AMI: ami-0803bfbffb994482a
+      AMI: ami-067597b36c985e7f5
     us-west-1:
-      AMI: ami-0bb933c5fe36ae02e
+      AMI: ami-03ec2424fb2711247
     us-west-2:
-      AMI: ami-0a9c260cb2d35ee2e
+      AMI: ami-067589e69c0d9554f
 Parameters:
   DeploymentRunnerSubnetId:
     AllowedPattern: ^(?!\s*$).+
@@ -768,6 +768,11 @@ Resources:
                       - - 'arn:aws:iam::'
                         - Ref: AWS::AccountId
                         - :role/aws-service-role/elasticloadbalancing.amazonaws.com/*
+                  - Fn::Join:
+                      - ""
+                      - - 'arn:aws:iam::'
+                        - Ref: AWS::AccountId
+                        - :role/aws-service-role/rds.amazonaws.com/*
                 Sid: "02"
             Version: "2012-10-17"
           PolicyName:
