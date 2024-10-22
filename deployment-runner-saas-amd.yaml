@@ -778,13 +778,13 @@ Resources:
           PolicyName:
             Fn::Join:
               - '-'
-              - - saas-dr-policy-linuxamd
+              - - dr-policy-linuxamd
                 - Ref: OrganizationID
                 - Ref: AWS::Region
       RoleName:
         Fn::Join:
           - '-'
-          - - saas-dr-task-role-linuxamd
+          - - dr-task-role-linuxamd
             - Ref: OrganizationID
             - Ref: AWS::Region
       Tags:
@@ -792,7 +792,7 @@ Resources:
           Value:
             Fn::Join:
               - '-'
-              - - saas-dr-task-role-linuxamd
+              - - dr-task-role-linuxamd
                 - Ref: OrganizationID
                 - Ref: AWS::Region
         - Key: created by
