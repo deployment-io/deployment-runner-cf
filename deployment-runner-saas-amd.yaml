@@ -267,7 +267,7 @@ Resources:
       AutoScalingGroupName:
         Fn::Join:
           - '-'
-          - - saas-dr-asg-linuxamd
+          - - dr-asg-linuxamd
             - Ref: OrganizationID
             - Ref: AWS::Region
       DefaultInstanceWarmup: 5
@@ -292,7 +292,7 @@ Resources:
       Cluster:
         Fn::Join:
           - '-'
-          - - saas-dr-linuxamd
+          - - dr-linuxamd
             - Ref: OrganizationID
       DeploymentConfiguration:
         MaximumPercent: 100
@@ -311,7 +311,7 @@ Resources:
       ServiceName:
         Fn::Join:
           - '-'
-          - - saas-dr-aws-controller-linuxamd
+          - - dr-aws-controller-linuxamd
             - Ref: OrganizationID
             - Ref: AWS::Region
       Tags:
@@ -319,7 +319,7 @@ Resources:
           Value:
             Fn::Join:
               - '-'
-              - - saas-dr-aws-controller-linuxamd
+              - - dr-aws-controller-linuxamd
                 - Ref: OrganizationID
                 - Ref: AWS::Region
         - Key: created by
@@ -370,14 +370,14 @@ Resources:
             LogDriver: awslogs
             Options:
               awslogs-create-group: "true"
-              awslogs-group: saas-dr-aws-controller-logs-group-linuxamd
+              awslogs-group: dr-aws-controller-logs-group-linuxamd
               awslogs-region:
                 Ref: AWS::Region
               awslogs-stream-prefix: "1"
           Name:
             Fn::Join:
               - '-'
-              - - saas-dr-aws-controller-linuxamd
+              - - dr-aws-controller-linuxamd
                 - Ref: OrganizationID
                 - Ref: AWS::Region
           Privileged: false
@@ -391,7 +391,7 @@ Resources:
       Family:
         Fn::Join:
           - '-'
-          - - saas-dr-aws-controller-linuxamd
+          - - dr-aws-controller-linuxamd
             - Ref: OrganizationID
             - Ref: AWS::Region
       Memory: 0.5 GB
@@ -404,7 +404,7 @@ Resources:
           Value:
             Fn::Join:
               - '-'
-              - - saas-dr-aws-controller-linuxamd
+              - - dr-aws-controller-linuxamd
                 - Ref: OrganizationID
                 - Ref: AWS::Region
         - Key: created by
@@ -423,7 +423,7 @@ Resources:
       Name:
         Fn::Join:
           - '-'
-          - - saas-dr-capacity-provider-linuxamd
+          - - dr-capacity-provider-linuxamd
             - Ref: OrganizationID
             - Ref: AWS::Region
       Tags:
@@ -433,7 +433,7 @@ Resources:
           Value:
             Fn::Join:
               - '-'
-              - - saas-dr-capacity-provider-linuxamd
+              - - dr-capacity-provider-linuxamd
                 - Ref: OrganizationID
                 - Ref: AWS::Region
     Type: AWS::ECS::CapacityProvider
@@ -445,13 +445,13 @@ Resources:
         - FARGATE
         - Fn::Join:
             - '-'
-            - - saas-dr-capacity-provider-linuxamd
+            - - dr-capacity-provider-linuxamd
               - Ref: OrganizationID
               - Ref: AWS::Region
       ClusterName:
         Fn::Join:
           - '-'
-          - - saas-dr-linuxamd
+          - - dr-linuxamd
             - Ref: OrganizationID
       Tags:
         - Key: created by
@@ -498,13 +498,13 @@ Resources:
           PolicyName:
             Fn::Join:
               - '-'
-              - - saas-dr-lambda-policy-linuxamd
+              - - dr-lambda-policy-linuxamd
                 - Ref: OrganizationID
                 - Ref: AWS::Region
       RoleName:
         Fn::Join:
           - '-'
-          - - saas-dr-lambda-linuxamd
+          - - dr-lambda-linuxamd
             - Ref: OrganizationID
             - Ref: AWS::Region
       Tags:
@@ -538,7 +538,7 @@ Resources:
                 Value:
                   Fn::Join:
                     - '-'
-                    - - saas-dr-template-linuxamd
+                    - - dr-template-linuxamd
                       - Ref: OrganizationID
                       - Ref: AWS::Region
         UserData:
@@ -551,13 +551,13 @@ Resources:
                     - - 'echo "ECS_CLUSTER='
                       - Fn::Join:
                           - '-'
-                          - - 'saas-dr-linuxamd'
+                          - - 'dr-linuxamd'
                             - Ref: OrganizationID
                       - '" >> /etc/ecs/ecs.config'
       LaunchTemplateName:
         Fn::Join:
           - '-'
-          - - saas-dr-template-linuxamd
+          - - dr-template-linuxamd
             - Ref: OrganizationID
             - Ref: AWS::Region
       TagSpecifications:
@@ -569,7 +569,7 @@ Resources:
               Value:
                 Fn::Join:
                   - '-'
-                  - - saas-dr-template-linuxamd
+                  - - dr-template-linuxamd
                     - Ref: OrganizationID
                     - Ref: AWS::Region
       VersionDescription: launch template for deployment runner ec2 instance
@@ -583,14 +583,14 @@ Resources:
         - CapacityProvider:
             Fn::Join:
               - '-'
-              - - saas-dr-capacity-provider-linuxamd
+              - - dr-capacity-provider-linuxamd
                 - Ref: OrganizationID
                 - Ref: AWS::Region
           Weight: 1
       Cluster:
         Fn::Join:
           - '-'
-          - - saas-dr-linuxamd
+          - - dr-linuxamd
             - Ref: OrganizationID
       DeploymentConfiguration:
         MaximumPercent: 100
@@ -603,7 +603,7 @@ Resources:
       ServiceName:
         Fn::Join:
           - '-'
-          - - saas-dr-linuxamd
+          - - dr-linuxamd
             - Ref: OrganizationID
             - Ref: AWS::Region
       Tags:
@@ -611,7 +611,7 @@ Resources:
           Value:
             Fn::Join:
               - '-'
-              - - saas-dr-linuxamd
+              - - dr-linuxamd
                 - Ref: OrganizationID
                 - Ref: AWS::Region
         - Key: created by
@@ -660,7 +660,7 @@ Resources:
             LogDriver: awslogs
             Options:
               awslogs-create-group: "true"
-              awslogs-group: saas-dr-logs-group-linuxamd
+              awslogs-group: dr-logs-group-linuxamd
               awslogs-region:
                 Ref: AWS::Region
               awslogs-stream-prefix: "1"
@@ -672,7 +672,7 @@ Resources:
           Name:
             Fn::Join:
               - '-'
-              - - saas-dr-linuxamd
+              - - dr-linuxamd
                 - Ref: OrganizationID
                 - Ref: AWS::Region
           Privileged: false
@@ -685,7 +685,7 @@ Resources:
       Family:
         Fn::Join:
           - '-'
-          - - saas-dr-linuxamd
+          - - dr-linuxamd
             - Ref: OrganizationID
             - Ref: AWS::Region
       Memory: 6 GB
@@ -698,7 +698,7 @@ Resources:
           Value:
             Fn::Join:
               - '-'
-              - - saas-dr-linuxamd
+              - - dr-linuxamd
                 - Ref: OrganizationID
                 - Ref: AWS::Region
         - Key: created by
