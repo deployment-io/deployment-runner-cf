@@ -5,57 +5,57 @@ Mappings:
     af-south-1:
       AMI: ami-08fbd8f5f956f39ef
     ap-east-1:
-      AMI: ami-02d41e1df08cdc043
+      AMI: ami-043a06624ef009e20
     ap-northeast-1:
-      AMI: ami-00c2bb8eed5749bcc
+      AMI: ami-0ad9e88d971ac38f5
     ap-northeast-2:
-      AMI: ami-0bbbbfb3892f9d840
+      AMI: ami-0e0a3f6889d16c659
     ap-northeast-3:
-      AMI: ami-05f81b5053acd5f31
+      AMI: ami-0057628b80d5d9bb5
     ap-south-1:
-      AMI: ami-0b23c71cff7ba7a32
+      AMI: ami-0396665e2ff17464c
     ap-south-2:
-      AMI: ami-05f21fb520b13966a
+      AMI: ami-0916b81dec41e8439
     ap-southeast-1:
-      AMI: ami-0b0221d859c75bb04
+      AMI: ami-0226a3f6351ce07f2
     ap-southeast-2:
-      AMI: ami-0ade904371c05ee2d
+      AMI: ami-08acf5fe7ee6ae359
     ap-southeast-3:
-      AMI: ami-05be0b5da1828f4e9
+      AMI: ami-0c3e940703d681d75
     ap-southeast-4:
-      AMI: ami-07840b393a7c85ef5
+      AMI: ami-08b02b7fceadee3e4
     ca-central-1:
-      AMI: ami-0582f202dd1be0120
+      AMI: ami-09fb8979cde809a2a
     eu-central-1:
-      AMI: ami-0b688987a01750fae
+      AMI: ami-0a9ccb9a6c38ee1b1
     eu-central-2:
-      AMI: ami-0a7eb3f6c1bb96277
+      AMI: ami-01f6bd2adbda43710
     eu-north-1:
-      AMI: ami-0db94f57964cdff48
+      AMI: ami-0d4b877103ac97971
     eu-south-1:
-      AMI: ami-0cea376a07e5afa86
+      AMI: ami-0344ff026a7eb9ec3
     eu-south-2:
-      AMI: ami-04e508333dbde1802
+      AMI: ami-07f7b86d29cd820cd
     eu-west-1:
-      AMI: ami-0253cc7286f51a2ff
+      AMI: ami-0e990afddc30323ad
     eu-west-2:
-      AMI: ami-06ae99f302c14647c
+      AMI: ami-07e798f707912b014
     eu-west-3:
-      AMI: ami-0bbf47e3912d9c961
+      AMI: ami-076bd6d3d01851a4d
     me-central-1:
-      AMI: ami-082a79ac632a1b2ed
+      AMI: ami-0e06920f670664413
     me-south-1:
-      AMI: ami-09345766ab0425b63
+      AMI: ami-0ef1a7ef1d58e6647
     sa-east-1:
-      AMI: ami-0ed3651a80bd7dfeb
+      AMI: ami-0866905df14454024
     us-east-1:
-      AMI: ami-0870bdb411e0b8cec
+      AMI: ami-047bc8e4155ed3720
     us-east-2:
-      AMI: ami-04356fad852d000a7
+      AMI: ami-0e61d0447c1a3f19f
     us-west-1:
-      AMI: ami-01066c4633c385f00
+      AMI: ami-079783fe97cd74288
     us-west-2:
-      AMI: ami-07338a174be100d5a
+      AMI: ami-044b6da470c4fe664
 Parameters:
   Key:
     AllowedPattern: ^[a-zA-Z0-9]+$
