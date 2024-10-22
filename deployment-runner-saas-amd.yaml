@@ -1,0 +1,809 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: This will install the saas deployment runner on the selected subnet. The organization id and key are unique to your account and used for authorization and communication with deployment servers.
+Mappings:
+  RegionMap:
+    af-south-1:
+      AMI: ami-08fbd8f5f956f39ef
+    ap-east-1:
+      AMI: ami-02d41e1df08cdc043
+    ap-northeast-1:
+      AMI: ami-00c2bb8eed5749bcc
+    ap-northeast-2:
+      AMI: ami-0bbbbfb3892f9d840
+    ap-northeast-3:
+      AMI: ami-05f81b5053acd5f31
+    ap-south-1:
+      AMI: ami-0b23c71cff7ba7a32
+    ap-south-2:
+      AMI: ami-05f21fb520b13966a
+    ap-southeast-1:
+      AMI: ami-0b0221d859c75bb04
+    ap-southeast-2:
+      AMI: ami-0ade904371c05ee2d
+    ap-southeast-3:
+      AMI: ami-05be0b5da1828f4e9
+    ap-southeast-4:
+      AMI: ami-07840b393a7c85ef5
+    ca-central-1:
+      AMI: ami-0582f202dd1be0120
+    eu-central-1:
+      AMI: ami-0b688987a01750fae
+    eu-central-2:
+      AMI: ami-0a7eb3f6c1bb96277
+    eu-north-1:
+      AMI: ami-0db94f57964cdff48
+    eu-south-1:
+      AMI: ami-0cea376a07e5afa86
+    eu-south-2:
+      AMI: ami-04e508333dbde1802
+    eu-west-1:
+      AMI: ami-0253cc7286f51a2ff
+    eu-west-2:
+      AMI: ami-06ae99f302c14647c
+    eu-west-3:
+      AMI: ami-0bbf47e3912d9c961
+    me-central-1:
+      AMI: ami-082a79ac632a1b2ed
+    me-south-1:
+      AMI: ami-09345766ab0425b63
+    sa-east-1:
+      AMI: ami-0ed3651a80bd7dfeb
+    us-east-1:
+      AMI: ami-0870bdb411e0b8cec
+    us-east-2:
+      AMI: ami-04356fad852d000a7
+    us-west-1:
+      AMI: ami-01066c4633c385f00
+    us-west-2:
+      AMI: ami-07338a174be100d5a
+Parameters:
+  Key:
+    AllowedPattern: ^[a-zA-Z0-9]+$
+    ConstraintDescription: API key must only contain uppercase and lowercase letters and numbers
+    Description: '[Do not update]. This is your unique prefilled token key identifier that is used for communication with deployment.io.'
+    Type: String
+  OrganizationID:
+    AllowedPattern: ^[a-zA-Z0-9]+$
+    ConstraintDescription: Organization ID must only contain uppercase and lowercase letters and numbers
+    Description: '[Do not update]. This is your unique prefilled organization id.'
+    Type: String
+  SaasDeploymentRunnerSubnetId:
+    AllowedPattern: ^(?!\s*$).+
+    ConstraintDescription: Subnet is required
+    Description: '[Required]. Please select Subnet where the runner will be deployed.'
+    Type: AWS::EC2::Subnet::Id
+Resources:
+  SaasDeploymentEcsInstanceProfilelinuxamd:
+    DependsOn:
+      - SaasDeploymentEcsInstanceRolelinuxamd
+    Properties:
+      InstanceProfileName:
+        Fn::Join:
+          - '-'
+          - - saasEcsInstanceProfilelinuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
+      Roles:
+        - Ref: SaasDeploymentEcsInstanceRolelinuxamd
+    Type: AWS::IAM::InstanceProfile
+  SaasDeploymentEcsInstanceRolelinuxamd:
+    Properties:
+      AssumeRolePolicyDocument: |-
+        {
+          "Version": "2008-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ec2.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        }
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+      RoleName:
+        Fn::Join:
+          - '-'
+          - - saasEcsInstanceRolelinuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
+      Tags:
+        - Key: created by
+          Value: deployment.io
+    Type: AWS::IAM::Role
+  SaasDeploymentLambdaCustomResourcelinuxamd:
+    DependsOn:
+      - SaasDeploymentWaitConditionHandlelinuxamd
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - SaasDeploymentLambdalinuxamd
+          - Arn
+    Type: AWS::CloudFormation::CustomResource
+  SaasDeploymentLambdalinuxamd:
+    Properties:
+      Code:
+        ZipFile: |4+
+            import json
+        
+            import urllib3
+            import os
+            import boto3
+            import time
+            import cfnresponse
+            import uuid
+        
+            http = urllib3.PoolManager()
+        
+        
+            def handler(event, context):
+                if event.get('RequestType') == 'Delete':
+                    response_data = {'message': 'Deleting lambda'}
+                    cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
+                    return
+                try:
+                    track_cloudformation_start()
+                except:
+                    print("failed to track cloudformation start")
+                create_ecs_service_linked_role()
+                arn = create_or_get_ecs_task_execution_role()
+                encoded_body = json.dumps({
+                    "Status": "SUCCESS",
+                    "Reason": "ECS service link role setup completed",
+                    "UniqueId": str(uuid.uuid4()),
+                    "Data": "ECS service link role setup completed"
+                })
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, {'message': 'Done executing lambda', 'eteRoleArn': arn})
+                http.request('PUT', os.environ['WAIT_URL'], body=encoded_body)
+                return
+        
+        
+            def create_ecs_service_linked_role():
+                iam = boto3.client('iam')
+                try:
+                    iam.create_service_linked_role(AWSServiceName='ecs.amazonaws.com')
+                    time.sleep(60)
+                except:
+                    return
+        
+        
+            roleTrustPolicy = """{
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "ecs-tasks.amazonaws.com"
+                  },
+                  "Action": "sts:AssumeRole"
+                }
+              ]
+            }"""
+        
+        
+            def create_or_get_ecs_task_execution_role():
+                iam = boto3.client('iam')
+                try:
+                    response = iam.get_role(RoleName=os.environ['ECS_TASK_EXECUTION_ROLE_NAME'])
+                    return response['Role']['Arn']
+        
+                except:
+                    pass
+        
+                try:
+                    response = iam.create_role(RoleName=os.environ['ECS_TASK_EXECUTION_ROLE_NAME'],
+                                               AssumeRolePolicyDocument=roleTrustPolicy,
+                                               Tags=[
+                                                   {
+                                                       'Key': 'created by',
+                                                       'Value': 'deployment.io'
+                                                   }
+                                               ])
+                    iam.attach_role_policy(
+                        RoleName=os.environ['ECS_TASK_EXECUTION_ROLE_NAME'],
+                        PolicyArn='arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
+                    )
+                    iam.attach_role_policy(
+                        RoleName=os.environ['ECS_TASK_EXECUTION_ROLE_NAME'],
+                        PolicyArn='arn:aws:iam::aws:policy/CloudWatchFullAccess'
+                    )
+                    iam.attach_role_policy(
+                        RoleName=os.environ['ECS_TASK_EXECUTION_ROLE_NAME'],
+                        PolicyArn='arn:aws:iam::aws:policy/SecretsManagerReadWrite'
+                    )
+                    return response['Role']['Arn']
+                except:
+                    return "arn is not valid"
+        
+        
+            def track_cloudformation_start():
+                url = "https://api.deployment.io/v1/onboarding/cf-start"
+                payload = json.dumps({
+                    "organizationId": os.environ['ORGANIZATION_ID'],
+                    "token": os.environ['TOKEN'],
+                })
+                headers = {
+                    'Content-Type': 'application/json'
+                }
+                resp = http.request("POST", url,
+                                    body=payload,
+                                    headers=headers,
+                                    retries=False)
+        
+                return
+
+      Description: Check if AWS ECS Service linked Role exists. If not, create it and wait for it to be stable
+      Environment:
+        Variables:
+          ECS_TASK_EXECUTION_ROLE_NAME:
+            Fn::Join:
+              - '-'
+              - - eTERole-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
+          ORGANIZATION_ID:
+            Ref: OrganizationID
+          TOKEN:
+            Ref: Key
+          WAIT_URL:
+            Ref: SaasDeploymentWaitConditionHandlelinuxamd
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - SaasDeploymentRunnerLambdaRolelinuxamd
+          - Arn
+      Runtime: python3.9
+      Tags:
+        - Key: created by
+          Value: deployment.io
+      Timeout: 100
+    Type: AWS::Lambda::Function
+  SaasDeploymentRunnerASGlinuxamd:
+    DependsOn:
+      - SaasDeploymentRunnerLaunchTemplatelinuxamd
+    Properties:
+      AutoScalingGroupName:
+        Fn::Join:
+          - '-'
+          - - saas-dr-asg-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
+      DefaultInstanceWarmup: 5
+      DesiredCapacity: "0"
+      LaunchTemplate:
+        LaunchTemplateId:
+          Ref: SaasDeploymentRunnerLaunchTemplatelinuxamd
+        Version:
+          Fn::GetAtt:
+            - SaasDeploymentRunnerLaunchTemplatelinuxamd
+            - LatestVersionNumber
+      MaxSize: "2"
+      MinSize: "0"
+      VPCZoneIdentifier:
+        - Ref: SaasDeploymentRunnerSubnetId
+    Type: AWS::AutoScaling::AutoScalingGroup
+  SaasDeploymentRunnerAwsControllerServicelinuxamd:
+    DependsOn:
+      - SaasDeploymentRunnerClusterlinuxamd
+      - SaasDeploymentRunnerAwsControllerTaskDefinitionlinuxamd
+    Properties:
+      Cluster:
+        Fn::Join:
+          - '-'
+          - - saas-dr-linuxamd
+            - Ref: OrganizationID
+      DeploymentConfiguration:
+        MaximumPercent: 100
+        MinimumHealthyPercent: 0
+      DesiredCount: 1
+      EnableECSManagedTags: false
+      EnableExecuteCommand: false
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - Ref: SaasDeploymentRunnerSubnetId
+      PropagateTags: TASK_DEFINITION
+      SchedulingStrategy: REPLICA
+      ServiceName:
+        Fn::Join:
+          - '-'
+          - - saas-dr-aws-controller-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - '-'
+              - - saas-dr-aws-controller-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
+        - Key: created by
+          Value: deployment.io
+      TaskDefinition:
+        Ref: SaasDeploymentRunnerAwsControllerTaskDefinitionlinuxamd
+    Type: AWS::ECS::Service
+  SaasDeploymentRunnerAwsControllerTaskDefinitionlinuxamd:
+    DependsOn:
+      - SaasDeploymentWaitConditionlinuxamd
+      - SaasDeploymentRunnerTaskRolelinuxamd
+    Properties:
+      ContainerDefinitions:
+        - DisableNetworking: false
+          Environment:
+            - Name: Token
+              Value:
+                Ref: Key
+            - Name: OrganizationID
+              Value:
+                Ref: OrganizationID
+            - Name: Service
+              Value: go.deployment.io:443
+            - Name: DockerImage
+              Value: docker.io/arorankit/deployment-runner-aws-controller-saas-amd64:1
+            - Name: DockerRunnerImage
+              Value: docker.io/arorankit/deployment-runner-saas-amd64:1
+            - Name: Region
+              Value:
+                Ref: AWS::Region
+            - Name: Memory
+              Value: 6 GB
+            - Name: ExecutionRoleArn
+              Value:
+                Fn::GetAtt:
+                  - SaasDeploymentLambdaCustomResourcelinuxamd
+                  - eteRoleArn
+            - Name: TaskRoleArn
+              Value:
+                Ref: SaasDeploymentRunnerTaskRolelinuxamd
+            - Name: AWSAccountID
+              Value:
+                Ref: AWS::AccountId
+          Essential: true
+          Image: docker.io/arorankit/deployment-runner-aws-controller-saas-amd64:1
+          Interactive: false
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-create-group: "true"
+              awslogs-group: saas-dr-aws-controller-logs-group-linuxamd
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-stream-prefix: "1"
+          Name:
+            Fn::Join:
+              - '-'
+              - - saas-dr-aws-controller-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
+          Privileged: false
+          PseudoTerminal: false
+          ReadonlyRootFilesystem: false
+      Cpu: .25 vCPU
+      ExecutionRoleArn:
+        Fn::GetAtt:
+          - SaasDeploymentLambdaCustomResourcelinuxamd
+          - eteRoleArn
+      Family:
+        Fn::Join:
+          - '-'
+          - - saas-dr-aws-controller-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
+      Memory: 0.5 GB
+      NetworkMode: awsvpc
+      RuntimePlatform:
+        CpuArchitecture: X86_64
+        OperatingSystemFamily: LINUX
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - '-'
+              - - saas-dr-aws-controller-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
+        - Key: created by
+          Value: deployment.io
+      TaskRoleArn:
+        Ref: SaasDeploymentRunnerTaskRolelinuxamd
+    Type: AWS::ECS::TaskDefinition
+  SaasDeploymentRunnerCClinuxamd:
+    DependsOn:
+      - SaasDeploymentRunnerASGlinuxamd
+      - SaasDeploymentWaitConditionlinuxamd
+    Properties:
+      AutoScalingGroupProvider:
+        AutoScalingGroupArn:
+          Ref: SaasDeploymentRunnerASGlinuxamd
+      Name:
+        Fn::Join:
+          - '-'
+          - - saas-dr-capacity-provider-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
+      Tags:
+        - Key: created by
+          Value: deployment.io
+        - Key: capacity provider
+          Value:
+            Fn::Join:
+              - '-'
+              - - saas-dr-capacity-provider-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
+    Type: AWS::ECS::CapacityProvider
+  SaasDeploymentRunnerClusterlinuxamd:
+    DependsOn:
+      - SaasDeploymentRunnerCClinuxamd
+    Properties:
+      CapacityProviders:
+        - FARGATE
+        - Fn::Join:
+            - '-'
+            - - saas-dr-capacity-provider-linuxamd
+              - Ref: OrganizationID
+              - Ref: AWS::Region
+      ClusterName:
+        Fn::Join:
+          - '-'
+          - - saas-dr-linuxamd
+            - Ref: OrganizationID
+      Tags:
+        - Key: created by
+          Value: deployment.io
+    Type: AWS::ECS::Cluster
+  SaasDeploymentRunnerLambdaRolelinuxamd:
+    Properties:
+      AssumeRolePolicyDocument: |-
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        }
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - iam:CreateServiceLinkedRole
+                Condition:
+                  StringLike:
+                    iam:AWSServiceName: ecs.amazonaws.com
+                Effect: Allow
+                Resource:
+                  - arn:aws:iam::*:role/aws-service-role/ecs.amazonaws.com/*
+                Sid: "01"
+              - Action:
+                  - iam:CreateRole
+                  - iam:GetRole
+                  - iam:TagRole
+                  - iam:AttachRolePolicy
+                  - iam:PutRolePolicy
+                Effect: Allow
+                Resource:
+                  - arn:aws:iam::*:role/*
+                Sid: "02"
+            Version: "2012-10-17"
+          PolicyName:
+            Fn::Join:
+              - '-'
+              - - saas-dr-lambda-policy-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
+      RoleName:
+        Fn::Join:
+          - '-'
+          - - saas-dr-lambda-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
+      Tags:
+        - Key: created by
+          Value: deployment.io
+    Type: AWS::IAM::Role
+  SaasDeploymentRunnerLaunchTemplatelinuxamd:
+    Properties:
+      LaunchTemplateData:
+        IamInstanceProfile:
+          Arn:
+            Fn::GetAtt:
+              - SaasDeploymentEcsInstanceProfilelinuxamd
+              - Arn
+        ImageId:
+          Fn::FindInMap:
+            - RegionMap
+            - Ref: AWS::Region
+            - AMI
+        InstanceType: m6a.large
+        NetworkInterfaces:
+          - DeviceIndex: 0
+            SubnetId:
+              Ref: SaasDeploymentRunnerSubnetId
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: created by
+                Value: deployment.io
+              - Key: instance launch template
+                Value:
+                  Fn::Join:
+                    - '-'
+                    - - saas-dr-template-linuxamd
+                      - Ref: OrganizationID
+                      - Ref: AWS::Region
+        UserData:
+          Fn::Base64:
+            Fn::Join:
+              - "\n"
+              - - '#!/bin/bash'
+                - Fn::Join:
+                    - ""
+                    - - 'echo "ECS_CLUSTER='
+                      - Fn::Join:
+                          - '-'
+                          - - 'saas-dr-linuxamd'
+                            - Ref: OrganizationID
+                      - '" >> /etc/ecs/ecs.config'
+      LaunchTemplateName:
+        Fn::Join:
+          - '-'
+          - - saas-dr-template-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
+      TagSpecifications:
+        - ResourceType: launch-template
+          Tags:
+            - Key: created by
+              Value: deployment.io
+            - Key: launch template
+              Value:
+                Fn::Join:
+                  - '-'
+                  - - saas-dr-template-linuxamd
+                    - Ref: OrganizationID
+                    - Ref: AWS::Region
+      VersionDescription: launch template for deployment runner ec2 instance
+    Type: AWS::EC2::LaunchTemplate
+  SaasDeploymentRunnerServicelinuxamd:
+    DependsOn:
+      - SaasDeploymentRunnerClusterlinuxamd
+      - SaasDeploymentRunnerTaskDefinitionlinuxamd
+    Properties:
+      CapacityProviderStrategy:
+        - CapacityProvider:
+            Fn::Join:
+              - '-'
+              - - saas-dr-capacity-provider-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
+          Weight: 1
+      Cluster:
+        Fn::Join:
+          - '-'
+          - - saas-dr-linuxamd
+            - Ref: OrganizationID
+      DeploymentConfiguration:
+        MaximumPercent: 100
+        MinimumHealthyPercent: 0
+      DesiredCount: 0
+      EnableECSManagedTags: false
+      EnableExecuteCommand: false
+      PropagateTags: TASK_DEFINITION
+      SchedulingStrategy: REPLICA
+      ServiceName:
+        Fn::Join:
+          - '-'
+          - - saas-dr-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - '-'
+              - - saas-dr-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
+        - Key: created by
+          Value: deployment.io
+      TaskDefinition:
+        Ref: SaasDeploymentRunnerTaskDefinitionlinuxamd
+    Type: AWS::ECS::Service
+  SaasDeploymentRunnerTaskDefinitionlinuxamd:
+    DependsOn:
+      - SaasDeploymentWaitConditionlinuxamd
+      - SaasDeploymentRunnerTaskRolelinuxamd
+    Properties:
+      ContainerDefinitions:
+        - DisableNetworking: false
+          Environment:
+            - Name: Token
+              Value:
+                Ref: Key
+            - Name: OrganizationID
+              Value:
+                Ref: OrganizationID
+            - Name: Service
+              Value: go.deployment.io:443
+            - Name: DockerImage
+              Value: docker.io/arorankit/deployment-runner-saas-amd64:1
+            - Name: Region
+              Value:
+                Ref: AWS::Region
+            - Name: Memory
+              Value: 6 GB
+            - Name: ExecutionRoleArn
+              Value:
+                Fn::GetAtt:
+                  - SaasDeploymentLambdaCustomResourcelinuxamd
+                  - eteRoleArn
+            - Name: TaskRoleArn
+              Value:
+                Ref: SaasDeploymentRunnerTaskRolelinuxamd
+            - Name: AWSAccountID
+              Value:
+                Ref: AWS::AccountId
+          Essential: true
+          Image: docker.io/arorankit/deployment-runner-saas-amd64:1
+          Interactive: false
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-create-group: "true"
+              awslogs-group: saas-dr-logs-group-linuxamd
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-stream-prefix: "1"
+          MountPoints:
+            - ContainerPath: /var/run/docker.sock
+              SourceVolume: docker-socket
+            - ContainerPath: /tmp
+              SourceVolume: temp
+          Name:
+            Fn::Join:
+              - '-'
+              - - saas-dr-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
+          Privileged: false
+          PseudoTerminal: false
+          ReadonlyRootFilesystem: false
+      ExecutionRoleArn:
+        Fn::GetAtt:
+          - SaasDeploymentLambdaCustomResourcelinuxamd
+          - eteRoleArn
+      Family:
+        Fn::Join:
+          - '-'
+          - - saas-dr-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
+      Memory: 6 GB
+      NetworkMode: host
+      RuntimePlatform:
+        CpuArchitecture: X86_64
+        OperatingSystemFamily: LINUX
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - '-'
+              - - saas-dr-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
+        - Key: created by
+          Value: deployment.io
+      TaskRoleArn:
+        Ref: SaasDeploymentRunnerTaskRolelinuxamd
+      Volumes:
+        - Host:
+            SourcePath: /var/run/docker.sock
+          Name: docker-socket
+        - Host:
+            SourcePath: /tmp
+          Name: temp
+    Type: AWS::ECS::TaskDefinition
+  SaasDeploymentRunnerTaskRolelinuxamd:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Condition:
+              ArnLike:
+                aws:SourceArn:
+                  Fn::Join:
+                    - ""
+                    - - 'arn:aws:ecs:'
+                      - Ref: AWS::Region
+                      - ':'
+                      - Ref: AWS::AccountId
+                      - :*
+              StringEquals:
+                aws:SourceAccount:
+                  Ref: AWS::AccountId
+            Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+        Version: "2012-10-17"
+      Description: This IAM Role is assigned to deployment runner task installed on your AWS account. At no point access is given to any other account or task.
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - iam:PutRolePolicy
+                  - iam:GetRolePolicy
+                  - iam:GetRole
+                  - iam:PassRole
+                Effect: Allow
+                Resource:
+                  - Fn::Join:
+                      - ""
+                      - - 'arn:aws:iam::'
+                        - Ref: AWS::AccountId
+                        - :role/*
+                Sid: "01"
+              - Action:
+                  - iam:CreateServiceLinkedRole
+                Effect: Allow
+                Resource:
+                  - Fn::Join:
+                      - ""
+                      - - 'arn:aws:iam::'
+                        - Ref: AWS::AccountId
+                        - :role/ecs.amazonaws.com/*
+                  - Fn::Join:
+                      - ""
+                      - - 'arn:aws:iam::'
+                        - Ref: AWS::AccountId
+                        - :role/aws-service-role/elasticloadbalancing.amazonaws.com/*
+                  - Fn::Join:
+                      - ""
+                      - - 'arn:aws:iam::'
+                        - Ref: AWS::AccountId
+                        - :role/aws-service-role/rds.amazonaws.com/*
+                Sid: "02"
+            Version: "2012-10-17"
+          PolicyName:
+            Fn::Join:
+              - '-'
+              - - saas-dr-policy-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
+      RoleName:
+        Fn::Join:
+          - '-'
+          - - saas-dr-task-role-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - '-'
+              - - saas-dr-task-role-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
+        - Key: created by
+          Value: deployment.io
+    Type: AWS::IAM::Role
+  SaasDeploymentWaitConditionHandlelinuxamd:
+    Properties: {}
+    Type: AWS::CloudFormation::WaitConditionHandle
+  SaasDeploymentWaitConditionlinuxamd:
+    Properties:
+      Handle:
+        Ref: SaasDeploymentWaitConditionHandlelinuxamd
+      Timeout: "300"
+    Type: AWS::CloudFormation::WaitCondition
