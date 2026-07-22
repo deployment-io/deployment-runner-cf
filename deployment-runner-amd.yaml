@@ -3,59 +3,57 @@ Description: This will install the deployment runner on the selected subnet. The
 Mappings:
   RegionMap:
     af-south-1:
-      AMI: ami-04a4d5340d7c6f5a8
+      AMI: ami-040ddb69c9e24d91b
     ap-east-1:
-      AMI: ami-0bb6b2c20c79249d9
+      AMI: ami-060055e519f0b14dd
     ap-northeast-1:
-      AMI: ami-01e9b1393f6f885a6
+      AMI: ami-033cf95d673c03ed3
     ap-northeast-2:
-      AMI: ami-0aea0366403b20ba4
+      AMI: ami-03ef17a2663aad8b0
     ap-northeast-3:
-      AMI: ami-0c4af26e0fe378594
+      AMI: ami-0309f189a046ab063
     ap-south-1:
-      AMI: ami-018bf378c35021448
+      AMI: ami-0a8396618f02ee845
     ap-south-2:
-      AMI: ami-02ab24bbb70d8b23d
+      AMI: ami-0ba7393d9b9e434e8
     ap-southeast-1:
-      AMI: ami-084a70ad874e38927
+      AMI: ami-06a5ee7908e54dc7d
     ap-southeast-2:
-      AMI: ami-05eed9f4669298905
+      AMI: ami-0e4504d4ce531e719
     ap-southeast-3:
-      AMI: ami-04efe11c355a08799
+      AMI: ami-0e701a807c81ef2f0
     ap-southeast-4:
-      AMI: ami-0422de4da5b499e43
+      AMI: ami-0c2cf3974e07228cb
     ca-central-1:
-      AMI: ami-09e3a92e7e915066a
+      AMI: ami-04a0d510a049fa759
     eu-central-1:
-      AMI: ami-0f57826d62bc45f9a
+      AMI: ami-0844f24683231effb
     eu-central-2:
-      AMI: ami-0e0e1ce4dd6fdd547
+      AMI: ami-0d6803931744a0011
     eu-north-1:
-      AMI: ami-03ae2981efe8fdf66
+      AMI: ami-01a6fb0fb43b8c72e
     eu-south-1:
-      AMI: ami-0ab85d5846ff5b685
+      AMI: ami-0382ec099524b7b86
     eu-south-2:
-      AMI: ami-07d4ca1170cb1cc96
+      AMI: ami-061da069bd4024e47
     eu-west-1:
-      AMI: ami-072dfd6f721064ef5
+      AMI: ami-050c98a788cb7d326
     eu-west-2:
-      AMI: ami-091af47000bc0bcc1
+      AMI: ami-0f6e8b665499e83b8
     eu-west-3:
-      AMI: ami-0fa70be5370f3acba
+      AMI: ami-012c3c4346cf96549
     me-central-1:
-      AMI: ami-01e71868cf9d675ff
-    me-south-1:
-      AMI: ami-03fada5f088680262
+      AMI: ami-0811f0464529638f3
     sa-east-1:
-      AMI: ami-0de65f7c84423a28f
+      AMI: ami-02b42ead4ea3df77e
     us-east-1:
-      AMI: ami-0b5f24ecac7c8ece8
+      AMI: ami-0ca1faae3b11255ac
     us-east-2:
-      AMI: ami-067597b36c985e7f5
+      AMI: ami-0bdda03613eacd634
     us-west-1:
-      AMI: ami-03ec2424fb2711247
+      AMI: ami-0fad21d97c01a620e
     us-west-2:
-      AMI: ami-067589e69c0d9554f
+      AMI: ami-0f01f254ec0734549
 Parameters:
   DeploymentRunnerSubnetId:
     AllowedPattern: ^(?!\s*$).+
@@ -412,6 +410,63 @@ Resources:
       TaskRoleArn:
         Ref: DeploymentRunnerTaskRolelinuxamd
     Type: AWS::ECS::TaskDefinition
+  DeploymentRunnerBedrockRolelinuxamd:
+    DependsOn:
+      - DeploymentRunnerTaskRolelinuxamd
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              AWS:
+                - Fn::Join:
+                    - ""
+                    - - 'arn:aws:iam::'
+                      - Ref: AWS::AccountId
+                      - :role/dr-task-role-linuxamd-
+                      - Ref: OrganizationID
+                      - '-'
+                      - Ref: AWS::Region
+        Version: "2012-10-17"
+      Description: Minimal Bedrock-only role. The deployment runner assumes it and vends its short-lived credentials to the agent container for AWS Bedrock model access — model invocation only.
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - bedrock:InvokeModel
+                  - bedrock:InvokeModelWithResponseStream
+                  - bedrock:ListInferenceProfiles
+                  - bedrock:GetInferenceProfile
+                Effect: Allow
+                Resource:
+                  - '*'
+                Sid: BedrockInvoke
+            Version: "2012-10-17"
+          PolicyName:
+            Fn::Join:
+              - '-'
+              - - dr-bedrock-policy-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
+      RoleName:
+        Fn::Join:
+          - '-'
+          - - dr-bedrock-role-linuxamd
+            - Ref: OrganizationID
+            - Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - '-'
+              - - dr-bedrock-role-linuxamd
+                - Ref: OrganizationID
+                - Ref: AWS::Region
+        - Key: created by
+          Value: deployment.io
+    Type: AWS::IAM::Role
   DeploymentRunnerCClinuxamd:
     DependsOn:
       - DeploymentRunnerASGlinuxamd
@@ -653,6 +708,11 @@ Resources:
             - Name: AWSAccountID
               Value:
                 Ref: AWS::AccountId
+            - Name: BedrockRoleArn
+              Value:
+                Fn::GetAtt:
+                  - DeploymentRunnerBedrockRolelinuxamd
+                  - Arn
           Essential: true
           Image: docker.io/arorankit/deployment-runner-amd64:27
           Interactive: false
@@ -774,6 +834,19 @@ Resources:
                         - Ref: AWS::AccountId
                         - :role/aws-service-role/rds.amazonaws.com/*
                 Sid: "02"
+              - Action:
+                  - sts:AssumeRole
+                Effect: Allow
+                Resource:
+                  - Fn::Join:
+                      - ""
+                      - - 'arn:aws:iam::'
+                        - Ref: AWS::AccountId
+                        - :role/dr-bedrock-role-linuxamd-
+                        - Ref: OrganizationID
+                        - '-'
+                        - Ref: AWS::Region
+                Sid: "03"
             Version: "2012-10-17"
           PolicyName:
             Fn::Join:
