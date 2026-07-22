@@ -430,7 +430,7 @@ Resources:
                       - '-'
                       - Ref: AWS::Region
         Version: "2012-10-17"
-      Description: Minimal Bedrock-only role. The deployment runner assumes it and vends its short-lived credentials to the agent container for AWS Bedrock model access — model invocation only.
+      Description: Minimal Bedrock-only role. The deployment runner assumes it and vends its short-lived credentials to the agent container for AWS Bedrock model access. Model invocation only.
       Policies:
         - PolicyDocument:
             Statement:
@@ -453,7 +453,7 @@ Resources:
       RoleName:
         Fn::Join:
           - '-'
-          - - dr-bedrock-role-linuxamd
+          - - dr-bedrock-linuxamd
             - Ref: OrganizationID
             - Ref: AWS::Region
       Tags:
@@ -461,7 +461,7 @@ Resources:
           Value:
             Fn::Join:
               - '-'
-              - - dr-bedrock-role-linuxamd
+              - - dr-bedrock-linuxamd
                 - Ref: OrganizationID
                 - Ref: AWS::Region
         - Key: created by
@@ -842,7 +842,7 @@ Resources:
                       - ""
                       - - 'arn:aws:iam::'
                         - Ref: AWS::AccountId
-                        - :role/dr-bedrock-role-linuxamd-
+                        - :role/dr-bedrock-linuxamd-
                         - Ref: OrganizationID
                         - '-'
                         - Ref: AWS::Region
