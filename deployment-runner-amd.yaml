@@ -431,6 +431,7 @@ Resources:
                       - Ref: AWS::Region
         Version: "2012-10-17"
       Description: Minimal Bedrock-only role. The deployment runner assumes it and vends its short-lived credentials to the agent container for AWS Bedrock model access. Model invocation only.
+      MaxSessionDuration: 14400
       Policies:
         - PolicyDocument:
             Statement:
