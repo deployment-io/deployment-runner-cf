@@ -3,57 +3,57 @@ Description: This will install the deployment runner on the selected subnet. The
 Mappings:
   RegionMap:
     af-south-1:
-      AMI: ami-040ddb69c9e24d91b
+      AMI: ami-0ec546942242e25ca
     ap-east-1:
-      AMI: ami-060055e519f0b14dd
+      AMI: ami-0a576b0ca796f9271
     ap-northeast-1:
-      AMI: ami-033cf95d673c03ed3
+      AMI: ami-041d46bf9ae246b7b
     ap-northeast-2:
-      AMI: ami-03ef17a2663aad8b0
+      AMI: ami-0e219686e50f6e682
     ap-northeast-3:
-      AMI: ami-0309f189a046ab063
+      AMI: ami-0afdee9e7d012b218
     ap-south-1:
-      AMI: ami-0a8396618f02ee845
+      AMI: ami-00acfdaeb4766e85b
     ap-south-2:
-      AMI: ami-0ba7393d9b9e434e8
+      AMI: ami-03f1c1e3e21681c3a
     ap-southeast-1:
-      AMI: ami-06a5ee7908e54dc7d
+      AMI: ami-0ee7be8b3c1a37ad7
     ap-southeast-2:
-      AMI: ami-0e4504d4ce531e719
+      AMI: ami-0ed6f1bee96cd1233
     ap-southeast-3:
-      AMI: ami-0e701a807c81ef2f0
+      AMI: ami-08159cb842edc64ea
     ap-southeast-4:
-      AMI: ami-0c2cf3974e07228cb
+      AMI: ami-032dc835d93ab825e
     ca-central-1:
-      AMI: ami-04a0d510a049fa759
+      AMI: ami-0a281741ac59f3640
     eu-central-1:
-      AMI: ami-0844f24683231effb
+      AMI: ami-048b74f2265405f65
     eu-central-2:
-      AMI: ami-0d6803931744a0011
+      AMI: ami-0b1c7773fab01d70d
     eu-north-1:
-      AMI: ami-01a6fb0fb43b8c72e
+      AMI: ami-0d123c0be1209d446
     eu-south-1:
-      AMI: ami-0382ec099524b7b86
+      AMI: ami-0ee03d250d810e1f6
     eu-south-2:
-      AMI: ami-061da069bd4024e47
+      AMI: ami-04a086980214d7a60
     eu-west-1:
-      AMI: ami-050c98a788cb7d326
+      AMI: ami-0df70c6919d81ea0e
     eu-west-2:
-      AMI: ami-0f6e8b665499e83b8
+      AMI: ami-088baf4e4a885adef
     eu-west-3:
-      AMI: ami-012c3c4346cf96549
+      AMI: ami-041036f87d05a382d
     me-central-1:
       AMI: ami-0811f0464529638f3
     sa-east-1:
-      AMI: ami-02b42ead4ea3df77e
+      AMI: ami-0348a82ba11167411
     us-east-1:
-      AMI: ami-0ca1faae3b11255ac
+      AMI: ami-0591be20e1215388d
     us-east-2:
-      AMI: ami-0bdda03613eacd634
+      AMI: ami-054be46b17e94a68a
     us-west-1:
-      AMI: ami-0fad21d97c01a620e
+      AMI: ami-062554a54539d41f7
     us-west-2:
-      AMI: ami-0f01f254ec0734549
+      AMI: ami-086a65807d9462abc
 Parameters:
   DeploymentRunnerSubnetId:
     AllowedPattern: ^(?!\s*$).+
@@ -342,7 +342,7 @@ Resources:
             - Name: Service
               Value: go.deployment.io:443
             - Name: DockerImage
-              Value: docker.io/arorankit/deployment-runner-aws-controller-amd64:4
+              Value: docker.io/arorankit/deployment-runner-aws-controller-amd64:5
             - Name: DockerRunnerImage
               Value: docker.io/arorankit/deployment-runner-amd64:27
             - Name: Region
@@ -361,8 +361,13 @@ Resources:
             - Name: AWSAccountID
               Value:
                 Ref: AWS::AccountId
+            - Name: BedrockRoleArn
+              Value:
+                Fn::GetAtt:
+                  - DeploymentRunnerBedrockRolelinuxamd
+                  - Arn
           Essential: true
-          Image: docker.io/arorankit/deployment-runner-aws-controller-amd64:4
+          Image: docker.io/arorankit/deployment-runner-aws-controller-amd64:5
           Interactive: false
           LogConfiguration:
             LogDriver: awslogs
@@ -371,7 +376,7 @@ Resources:
               awslogs-group: dr-aws-controller-logs-group-linuxamd
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: "4"
+              awslogs-stream-prefix: "5"
           Name:
             Fn::Join:
               - '-'
