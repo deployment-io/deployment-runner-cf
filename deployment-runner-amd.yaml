@@ -3,57 +3,57 @@ Description: This will install the deployment runner on the selected subnet. The
 Mappings:
   RegionMap:
     af-south-1:
-      AMI: ami-0ec546942242e25ca
+      AMI: ami-084d1c2c12b86ea36
     ap-east-1:
-      AMI: ami-0a576b0ca796f9271
+      AMI: ami-0c966ccace6b78e4e
     ap-northeast-1:
-      AMI: ami-041d46bf9ae246b7b
+      AMI: ami-0859a922e97da072e
     ap-northeast-2:
-      AMI: ami-0e219686e50f6e682
+      AMI: ami-025152658fe6240e2
     ap-northeast-3:
-      AMI: ami-0afdee9e7d012b218
+      AMI: ami-0e4cac0ac5c15824a
     ap-south-1:
-      AMI: ami-00acfdaeb4766e85b
+      AMI: ami-0460b9f02758e2e0a
     ap-south-2:
-      AMI: ami-03f1c1e3e21681c3a
+      AMI: ami-0b376a55e03199748
     ap-southeast-1:
-      AMI: ami-0ee7be8b3c1a37ad7
+      AMI: ami-05adf7dfe6c03eacb
     ap-southeast-2:
-      AMI: ami-0ed6f1bee96cd1233
+      AMI: ami-0db1ccf311de68fe4
     ap-southeast-3:
-      AMI: ami-08159cb842edc64ea
+      AMI: ami-0fe2bd79fa923af97
     ap-southeast-4:
-      AMI: ami-032dc835d93ab825e
+      AMI: ami-07ed4880391464d13
     ca-central-1:
-      AMI: ami-0a281741ac59f3640
+      AMI: ami-0d8a3dc47c9993e50
     eu-central-1:
-      AMI: ami-048b74f2265405f65
+      AMI: ami-0174a3ebb6416b80f
     eu-central-2:
-      AMI: ami-0b1c7773fab01d70d
+      AMI: ami-01cac8faeb74638d2
     eu-north-1:
-      AMI: ami-0d123c0be1209d446
+      AMI: ami-0ef5cb0515cf032c6
     eu-south-1:
-      AMI: ami-0ee03d250d810e1f6
+      AMI: ami-0bc2182c6b81c80c7
     eu-south-2:
-      AMI: ami-04a086980214d7a60
+      AMI: ami-087423d02df84a6e9
     eu-west-1:
-      AMI: ami-0df70c6919d81ea0e
+      AMI: ami-04df686f02a84aed0
     eu-west-2:
-      AMI: ami-088baf4e4a885adef
+      AMI: ami-0523871f0587d3af3
     eu-west-3:
-      AMI: ami-041036f87d05a382d
+      AMI: ami-0766f05d9f49f327f
     me-central-1:
-      AMI: ami-0811f0464529638f3
+      AMI: ami-01f4432dd0e1702ff
     sa-east-1:
-      AMI: ami-0348a82ba11167411
+      AMI: ami-0a33a63b38ac87e02
     us-east-1:
-      AMI: ami-0591be20e1215388d
+      AMI: ami-03f17ca070198bdbb
     us-east-2:
-      AMI: ami-054be46b17e94a68a
+      AMI: ami-035b4c0efb7a552ab
     us-west-1:
-      AMI: ami-062554a54539d41f7
+      AMI: ami-0c3e1ee148a3a59f8
     us-west-2:
-      AMI: ami-086a65807d9462abc
+      AMI: ami-0ff452433086f6534
 Parameters:
   DeploymentRunnerSubnetId:
     AllowedPattern: ^(?!\s*$).+
@@ -252,7 +252,7 @@ Resources:
         Fn::GetAtt:
           - DeploymentRunnerLambdaRolelinuxamd
           - Arn
-      Runtime: python3.9
+      Runtime: python3.12
       Tags:
         - Key: created by
           Value: deployment.io
@@ -586,6 +586,10 @@ Resources:
             - Ref: AWS::Region
             - AMI
         InstanceType: m6a.large
+        MetadataOptions:
+          HttpEndpoint: enabled
+          HttpPutResponseHopLimit: 1
+          HttpTokens: required
         NetworkInterfaces:
           - DeviceIndex: 0
             SubnetId:
@@ -604,17 +608,9 @@ Resources:
                       - Ref: AWS::Region
         UserData:
           Fn::Base64:
-            Fn::Join:
-              - "\n"
-              - - '#!/bin/bash'
-                - Fn::Join:
-                    - ""
-                    - - 'echo "ECS_CLUSTER='
-                      - Fn::Join:
-                          - '-'
-                          - - 'dr-linuxamd'
-                            - Ref: OrganizationID
-                      - '" >> /etc/ecs/ecs.config'
+            Fn::Sub: |
+              #!/bin/bash
+              echo "ECS_CLUSTER=dr-linuxamd-${OrganizationID}" >> /etc/ecs/ecs.config
       LaunchTemplateName:
         Fn::Join:
           - '-'
