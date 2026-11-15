@@ -342,7 +342,7 @@ Resources:
             - Name: Service
               Value: go.deployment.io:443
             - Name: DockerImage
-              Value: docker.io/arorankit/deployment-runner-aws-controller-amd64:5
+              Value: docker.io/arorankit/deployment-runner-aws-controller-amd64:6
             - Name: DockerRunnerImage
               Value: docker.io/arorankit/deployment-runner-amd64:27
             - Name: Region
@@ -367,7 +367,7 @@ Resources:
                   - DeploymentRunnerBedrockRolelinuxamd
                   - Arn
           Essential: true
-          Image: docker.io/arorankit/deployment-runner-aws-controller-amd64:5
+          Image: docker.io/arorankit/deployment-runner-aws-controller-amd64:6
           Interactive: false
           LogConfiguration:
             LogDriver: awslogs
@@ -376,7 +376,7 @@ Resources:
               awslogs-group: dr-aws-controller-logs-group-linuxamd
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: "5"
+              awslogs-stream-prefix: "6"
           Name:
             Fn::Join:
               - '-'
